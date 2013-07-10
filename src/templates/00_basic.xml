@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<conf>
+	<general>
+		<defaultTraceLevel>1</defaultTraceLevel>
+		<destinationLogFile>/home/miroir/outil_replication/log</destinationLogFile>
+		<defaultLoginSrc>st12495</defaultLoginSrc>
+	</general>
+	
+	<type nom="binaires">
+		
+		<!-- HQ -->
+		<entite nom="A350_HQ">
+			<data id="1">
+				<hostSrc>/home/miroir/outil_replication/conf/machines_std.xml</hostSrc>
+				<hostDest>burns</hostDest>
+				<repDest>/</repDest>
+				<activeFirewall>yes</activeFirewall>
+
+				<!-- repSrc here -->
+
+			</data>
+		</entite>
+
+	</type>
+</conf>
