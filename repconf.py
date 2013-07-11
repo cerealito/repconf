@@ -14,15 +14,16 @@ if __name__ == '__main__':
 
 
 from optparse import OptionParser
-from os.path import basename
+from os.path import dirname, basename, splitext
 
 from replicator.EAReader import EAReader 
 from replicator.ConfWriter import ConfWriter
 
+import os
 
 def main():
     
-    usage = "usage: repconf [options] etat_appli root_dir"
+    usage = "usage: repconf [options] /path/to/etat.appli"
     myParser = OptionParser(usage)
     
     myParser.add_option("-o",
@@ -32,11 +33,16 @@ def main():
     
     opts, args = myParser.parse_args()
 
-    if len(args) == 2:
+    if len(args) == 1:
         # inputs and output
         etat_appli_f = args[0]
-        root_dir     = args[1]
-        output_f     = "conf_" + basename(etat_appli_f)
+        
+        # apply dirname twice because we want the parent of the parent
+        root_dir     =  dirname(dirname(etat_appli_f))
+
+        f, ext = splitext(basename(etat_appli_f))
+               
+        output_f     = "conf_" + f + ".xml"
                
         # rename output if needed
         if opts.output:
@@ -58,9 +64,8 @@ def main():
             # most probably etat_appli_f can not be read
             sys.exit(str(ioe))
         except AttributeError, ae:
-            #most probably the template is not as the code expects
-            sys.stderr.write(str(ae) + '\n')
-            sys.exit('There is most likley an error with the Template file. Check it')
+            #most probably the passed file is not an etat appli
+            sys.exit("The input file is not an appropriate etat.appli ")
         
         print "appending " + str(len(mySources)) + " repSrc elements"
         

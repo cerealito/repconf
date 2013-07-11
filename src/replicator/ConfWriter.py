@@ -4,8 +4,11 @@ Created on Jul 5, 2013
 @author: saflores
 '''
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 from os.path import exists
+
+import sys
 
 class ConfWriter(object):
     '''
@@ -29,8 +32,14 @@ class ConfWriter(object):
             raise IOError
         
         #start form the template
-        self.conf_xmldoc = minidom.parse(self.template)
+
         
+        try:
+            self.conf_xmldoc = minidom.parse(self.template)
+        except ExpatError, e:
+            sys.stderr.write(str(e) + '\n')
+            sys.exit('Template file '+ self.template + ' is not a well formed xml file')
+
     def addEntityName(self, name):
         '''
         adds a 'nom' attribute to the 'entite' tag in the template, and assigns it the value
@@ -52,7 +61,7 @@ class ConfWriter(object):
         
         #create an xml node for every element of the repSources:
         for src in repSources:
-            tag = self.conf_xmldoc.createElement('srcRep')
+            tag = self.conf_xmldoc.createElement('repSrc')
             txt = self.conf_xmldoc.createTextNode(src.fullPath())
             
             tag.appendChild(txt)

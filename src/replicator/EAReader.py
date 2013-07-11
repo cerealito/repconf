@@ -6,7 +6,10 @@ Created on 4 juil. 2013
 '''
 
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 from os.path import join
+
+import sys
 
 class EAReader(object):
     '''
@@ -17,8 +20,13 @@ class EAReader(object):
         '''
         Constructor
         '''
+
+        try:        
+            self.ea_xmldoc = minidom.parse(ea_file)
+        except ExpatError, e:
+            sys.stderr.write(str(e) + '\n')
+            sys.exit('Input file '+ ea_file + ' is not a well formed xml file')
         
-        self.ea_xmldoc = minidom.parse(ea_file)
         self.interesting_tags = ["Taches",
                        "Sequencement",
                        "Exceptions",

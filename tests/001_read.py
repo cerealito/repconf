@@ -11,15 +11,10 @@ from replicator.EAReader import EAReader
 from replicator.ConfWriter import ConfWriter
 
 
-class Test(unittest.TestCase):
-
-    def __init__(self, methodName='runTest'):
-        super(Test, self).__init__(methodName)
-        print "constructor"
-        self.repSources = []
-        
+class Test(unittest.TestCase):     
 
     def setUp(self):
+        print '=================================='
         print 'working on \n' + os.getcwd() + '\n'
         
 
@@ -27,7 +22,7 @@ class Test(unittest.TestCase):
         pass
 
 
-    def testRead(self):
+    def testReadOK(self):
         etat_appli_f = './etat_STD5_officiel.appli'
         root_dir     = '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/Linux_2.4.7/A350/A350H'
         
@@ -36,6 +31,18 @@ class Test(unittest.TestCase):
         
         for src in self.repSources:
             print src
+            
+    def testReadKO(self):
+        etat_appli_f = '../ref/conf_A350AC-1.xml'
+        root_dir     = '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/Linux_2.4.7/A350/A350H'
+        
+        try:
+            myReader   = EAReader(etat_appli_f)
+            self.repSources = myReader.getFiles(root_dir)
+        except AttributeError, ae:
+            print "input file for EAReader not in appropriate format"
+        
+
             
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testRead']
