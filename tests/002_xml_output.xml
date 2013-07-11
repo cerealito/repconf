@@ -28,10 +28,9 @@
             
 		
 		
-            <!-- HQ -->
-            
-		
-            <entite nom="A350_HQ">
+            <entite nom="etat_STD5_officiel.appli">
+                 
+                <!-- insert as attribute nom="name of etat.appli" -->
                 
 			
                 <data id="1">

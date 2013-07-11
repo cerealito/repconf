@@ -6,16 +6,13 @@ Created on Apr 22, 2013
 
 import unittest
 import os
+from os.path import basename
 
 from replicator.EAReader import EAReader 
 from replicator.ConfWriter import ConfWriter
 
 
 class Test(unittest.TestCase):
-
-
-    
-
     
     def setUp(self):
         print 'working on \n' + os.getcwd() + '\n'
@@ -34,13 +31,11 @@ class Test(unittest.TestCase):
         repSources = myReader.getFiles(root_dir)
         
         myWriter = ConfWriter()
-        
+        myWriter.addEntityName(basename(etat_appli_f))
         print "appending " + str(len(repSources)) + " repSrc elements"
         myWriter.addSources(repSources)
         
         myWriter.writeTo(output_f)
-        
-
 
         self.assertTrue(os.path.exists(output_f), 'something went wrong while writing')
 

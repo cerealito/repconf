@@ -45,22 +45,30 @@ def main():
         #give user some output
         print 'etat appli : ' + etat_appli_f
         print 'remote root: ' + root_dir
-        print "output file: " + output_f
+        
         
         #TODO: check for errors
         try:
             myReader  = EAReader(etat_appli_f)
+            mySources = myReader.getFiles(root_dir)
+            myWriter  = ConfWriter()
+            myWriter.addEntityName(basename(etat_appli_f))
+
         except IOError, ioe:
+            # most probably etat_appli_f can not be read
             sys.exit(str(ioe))
-        
-        mySources = myReader.getFiles(root_dir)
-        
-        myWriter  = ConfWriter()
+        except AttributeError, ae:
+            #most probably the template is not as the code expects
+            sys.stderr.write(str(ae) + '\n')
+            sys.exit('There is most likley an error with the Template file. Check it')
         
         print "appending " + str(len(mySources)) + " repSrc elements"
         
         myWriter.addSources(mySources)
         myWriter.writeTo(output_f)
+        
+        print "output file: " + output_f
+        print "bye"
         
     else:
         myParser.error("incorrect number of arguments. Try -h for help")

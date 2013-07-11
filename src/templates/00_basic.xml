@@ -8,8 +8,8 @@
 	
 	<type nom="binaires">
 		
-		<!-- HQ -->
-		<entite nom="A350_HQ">
+		<!-- The 'nom' attribute of 'entite' will be the name of the ettat_appli file -->
+		<entite> 
 			<data id="1">
 				<hostSrc>/home/miroir/outil_replication/conf/machines_std.xml</hostSrc>
 				<hostDest>burns</hostDest>
