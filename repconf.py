@@ -14,11 +14,13 @@ if __name__ == '__main__':
 
 
 from optparse import OptionParser
-from os.path import dirname, basename, splitext
+from os.path import dirname, basename, splitext, join
 
 from replicator.EAReader import EAReader 
 from replicator.ConfWriter import ConfWriter
 from replicator.RemoteLister import RemoteLister
+from replicator.SCopier import SCopier
+
 import replicator.constants as constants
 
 import os
@@ -63,7 +65,7 @@ def main():
     # Real replication needs at least one argument:    
     if len(args) == 1:
         # inputs and output
-        etat_appli_f = args[0]
+        etat_appli_f_name = args[0]
     else:
         myParser.error("incorrect number of arguments. Try -h for help")
         # will exit on error.        
@@ -72,9 +74,14 @@ def main():
     ##################################################################
     # If no error, start doing the stuff
     if opts.local:
-        local(etat_appli_f, opts.output)
+        local(etat_appli_f_name, opts.output)
     else:
-        print 'getting remote file'
+        print 'getting remote file ' + etat_appli_f_name
+        
+        myScp = SCopier()
+        etat_appli_TMP = myScp.get(join(constants.default_dir, etat_appli_f_name))
+        local(etat_appli_TMP, opts.output)
+        
         
         
 
