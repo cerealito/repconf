@@ -69,7 +69,7 @@ class EAReader(object):
                 # models are ALWAYS in sous-modeles directory
                 # and the basename is in the Librarie attribute
                 if (tag == 'Modele'):
-                    f.appendToDirname("sous-modeles")
+                    f.appendToDirname("sous_modeles")
                     f.basename = tag_lst.item(i).getAttribute("Librairie")
                 # for every other tag look for attribute Nom
                 else:
