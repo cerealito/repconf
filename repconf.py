@@ -80,14 +80,19 @@ def main():
         
         myScp = SCopier()
         etat_appli_TMP = myScp.get(join(constants.default_dir, etat_appli_f_name))
-        local(etat_appli_TMP, opts.output)
+        local(etat_appli_TMP, opts.output, constants.default_dir)
         
         
         
 
-def local(etat_appli_f, output=None):
-    # apply dirname twice because we want the parent of the parent
-    root_dir     =  dirname(dirname(etat_appli_f))
+def local(etat_appli_f, output=None, remote_root=None):
+    
+    if remote_root:
+        # apply dirname twice because we want the parent of the parent
+        root_dir = dirname(dirname(remote_root))
+    else:
+        # apply dirname twice because we want the parent of the parent
+        root_dir     =  dirname(dirname(etat_appli_f))
 
     f, ext = splitext(basename(etat_appli_f))      
     output_f     = "conf_" + f + ".xml"
