@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
 
 from optparse import OptionParser
-from os.path import dirname, basename, splitext, join
+from os.path import dirname, basename, splitext, join, exists
 
 from replicator.EAReader import EAReader 
 from replicator.ConfWriter import ConfWriter
@@ -28,7 +28,7 @@ import os
 
 def main():
     
-    usage = "usage: repconf [options] /path/to/file.appli"
+    usage = "usage: repconf [options] program file.appli"
     myParser = OptionParser(usage)
     
     myParser.add_option("-o",
@@ -46,26 +46,63 @@ def main():
                         "--what",
                         action="store_true",
                         dest="show_available",
-                        help="shows available .appli files in airbus ")
+                        help="shows available programs or appli files")
     
     opts, args = myParser.parse_args()
+        
+    ##################################################################
+    # If in local mode, just one arg is needed ignore any other args
+    if opts.local:
+        etat_appli_f_name = args[0]
+        ret = local(etat_appli_f_name, opts.output)
+        sys.exit( ret )
     
     ##################################################################
     # show available .appli files in remote file system,
     #then exits, regardless of any other options
     if opts.show_available:
-        print 'listing available .appli files in '
-        print constants.default_host + ':' + constants.default_dir
-        print
-        RemoteLister.ls(constants.default_dir, "appli$")
+        
+        if len(args) == 0:
+            print 'listing known programs'
+            
+            for k,v in constants.programs.items():
+                print k + ' : ' + v
+             
+            print 'try -w <program> for available .appli files in each program'
+            
+        if len(args) > 0:
+            p     = args[0]
+            p_dir = constants.programs.get(p)
+            
+            if p_dir == None:
+                print "Do not know about program " + p
+                print "Try -w for available programs"
+                sys.exit(-1)
+            
+            print 'listing available appli files in ' + p
+            print
+            RemoteLister.ls(p_dir, "appli$")
         
         sys.exit(0)
     
     ##################################################################
-    # Real replication needs at least one argument:    
-    if len(args) == 1:
-        # inputs and output
-        etat_appli_f_name = args[0]
+    # If in remote mode
+    if len(args) == 2:
+        p     = args[0]
+        etat_appli_f_name = args[1]
+        
+        p_dir = constants.programs.get(p)
+        
+        if p_dir == None:
+            print "Do not know about program " + p
+            print "Try -w for available programs"
+            sys.exit(-1)
+        
+        print 'getting remote file ' + etat_appli_f_name
+    
+        myScp = SCopier()
+        etat_appli_TMP = myScp.get(join(p_dir, etat_appli_f_name))
+        local(etat_appli_TMP, opts.output, constants.default_dir)
     else:
         myParser.error("incorrect number of arguments. Try -h for help")
         # will exit on error.        
@@ -73,14 +110,7 @@ def main():
         
     ##################################################################
     # If no error, start doing the stuff
-    if opts.local:
-        local(etat_appli_f_name, opts.output)
-    else:
-        print 'getting remote file ' + etat_appli_f_name
-        
-        myScp = SCopier()
-        etat_appli_TMP = myScp.get(join(constants.default_dir, etat_appli_f_name))
-        local(etat_appli_TMP, opts.output, constants.default_dir)
+
         
         
         
@@ -126,7 +156,11 @@ def local(etat_appli_f, output=None, remote_root=None):
     myWriter.writeTo(output_f)
     
     print "output file: " + output_f
-    print "bye"
+    
+    if exists(output_f):
+        return 0 # shell convention for success
+    else:
+        return -1 # shell convention for failure
 
 
 if __name__ == '__main__':
