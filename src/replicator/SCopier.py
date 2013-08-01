@@ -24,9 +24,9 @@ class SCopier(object):
 
     
     def get(self, r_file, l_name=None):
-        print "get " + r_file
-        
-        
+        print "copying remote file: "
+        print "  " + r_file
+        print "to current directory. Existing files will be overwritten"
                 
         cmd_lst = ['scp', '-p', self.login + '@' + self.host + ':' + r_file]
         
