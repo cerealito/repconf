@@ -6,7 +6,8 @@ Created on Jul 31, 2013
 
 import subprocess
 import constants
-from os.path import basename, isfile
+import os, stat
+from os.path import basename, exists, dirname
 
 
 class SCopier(object):
@@ -24,11 +25,16 @@ class SCopier(object):
 
     
     def get(self, r_file, l_name=None):
-        print "copying remote file: "
-        print "  " + r_file
-        print "to current directory. Existing files will be overwritten"
+#         print "copying remote file: "
+#         print "  " + r_file
+#         print "as: "
+#         print "  " + l_name
+#         print "Existing files will be overwritten"
+
+        if not exists(dirname(l_name)):
+            os.makedirs(dirname(l_name))
                 
-        cmd_lst = ['scp', '-p', self.login + '@' + self.host + ':' + r_file]
+        cmd_lst = ['scp', self.login + '@' + self.host + ':' + r_file]
         
         if not l_name:
             l_name = basename(r_file)
@@ -47,7 +53,8 @@ class SCopier(object):
             if stderr:
                 print stderr
                 
-        # if sucessful,l_name is a file
-        if isfile(l_name):
+        # if sucessful,l_name exists
+        if exists(l_name):
+            os.chmod(l_name, 0777)
             return l_name
          

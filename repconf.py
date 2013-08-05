@@ -20,6 +20,7 @@ from replicator.ConfWriter import ConfWriter
 from replicator.RemoteLister import RemoteLister
 from replicator.SCopier import SCopier
 from replicator.PlainWriter import PlainWriter
+from replicator.RSyncWrapper import RSyncWrapper
 
 import replicator.constants as constants
 
@@ -54,8 +55,9 @@ def main():
     # If in local mode, just one arg is needed ignore any other args
     if opts.local:
         etat_appli_f_name = args[0]
-        ret = local(etat_appli_f_name, opts.output)
-        sys.exit( ret )
+        local(etat_appli_f_name, opts.output)
+        # TODO: exit status should reflect the success or failure of the command 
+        sys.exit(0)
     
     ##################################################################
     # show available .appli files in remote file system,
@@ -100,9 +102,15 @@ def main():
         
         print 'getting remote file ' + etat_appli_f_name
     
-        myScp = SCopier()
-        etat_appli_TMP = myScp.get(join(p_dir, etat_appli_f_name))
-        local(etat_appli_TMP, opts.output, constants.default_dir)
+    
+        rsync = RSyncWrapper()
+    
+        rsync.SyncSingleFile(remote_f_name, tgt_local_name, r_root, l_root)
+    
+        #myScp = SCopier()
+        #etat_appli_TMP = myScp.get(join(p_dir, etat_appli_f_name),
+        #                           join(constants.tmp_dir, basename(etat_appli_f_name)))
+        #local(etat_appli_TMP, opts.output, p_dir)
     else:
         myParser.error("incorrect number of arguments. Try -h for help")
         # will exit on error.        
@@ -141,8 +149,8 @@ def local(etat_appli_f, output=None, remote_root=None):
     try:
         myReader  = EAReader(etat_appli_f)
         mySources = myReader.getFiles(root_dir)
-        myWriter  = ConfWriter()
-        myWriter.addEntityName(basename(etat_appli_f))
+        #myWriter  = ConfWriter()
+        #myWriter.addEntityName(basename(etat_appli_f))
         
         anotherWriter = PlainWriter()
         anotherWriter.addSources(mySources)
@@ -156,17 +164,16 @@ def local(etat_appli_f, output=None, remote_root=None):
     
     print "appending " + str(len(mySources)) + " repSrc elements"
     
-    myWriter.addSources(mySources)
-    myWriter.writeTo(output_f)
-    anotherWriter.writeTo('rsync.txt')
+    #myWriter.addSources(mySources)
+    #myWriter.writeTo(output_f)
     
-    print "output file: " + output_f
+    anotherWriter.writeTo(constants.rsync_tmp)
     
-    if exists(output_f):
-        return 0 # shell convention for success
-    else:
-        return -1 # shell convention for failure
-
+    
+    rsync = RSyncWrapper()
+    
+    rsync.SyncFilesFrom(constants.rsync_tmp, constants.remote_root, constants.local_root)
+    
 
 if __name__ == '__main__':
     main()

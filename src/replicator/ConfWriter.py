@@ -69,9 +69,13 @@ class ConfWriter(object):
             dataTag.appendChild(tag)
     
     def writeTo(self, output_f):
+        '''
+        writes xml file to disk
+        '''
         self.conf_xmldoc.writexml( open(output_f,'w') ,
                                    indent    = '    ',
                                    addindent = '    ',
-                                   newl      = '\n'   )    
+                                   newl      = '\n'   )
+
         
     
