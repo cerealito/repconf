@@ -3,9 +3,9 @@ Created on Aug 2, 2013
 
 @author: saflores
 '''
-import subprocess, sys
+import subprocess, sys, os
 import constants
-from os.path import basename, isfile, join
+from os.path import basename, isfile, join, exists
 from time import sleep
 from Queue import Queue, Empty
 from threading import Thread
@@ -25,43 +25,47 @@ class RSyncWrapper(object):
         self.host  = host
         self.io_q = Queue()
 
-    def SyncSingleFile(self, remote_f_name, tgt_local_name=None, r_root=constants.remote_root, l_root=constants.local_root):
+    def SyncSingleFile(self, remote_f_name, tgt_local_name=None):
+        
         print "attempting to rsync from " + self.host
         
         if tgt_local_name is None:
             tgt_local_name = remote_f_name
       
-        full_remote_f_name = join (r_root,remote_f_name)
-        full_tgt_f_name    = join (l_root,tgt_local_name)
+        full_remote_f_name = remote_f_name
+        full_tgt_f_name    = tgt_local_name
         
-        cmd_lst = ['rsync', '-acvn',
+        cmd_lst = ['rsync', '-acv',
                     self.login + '@' + self.host + ':' + full_remote_f_name,
                     full_tgt_f_name]
         
-        print cmd_lst
-#         proc =  subprocess.Popen(cmd_lst,
-#                                  stdout=subprocess.PIPE,
-#                                  stderr=subprocess.PIPE
-#                                 )
-#         
-#         stdout_watch   = Thread(target=stream_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
-#         stdout_printer = Thread(target=printer, name="printer", args=(proc,self.io_q))
-#         
-#         stdout_watch.start()
-#         stdout_printer.start()
-#         
-#         # wait for our auxiliary threads to die before anouncing the end
-#         while True:
-#             if stdout_printer.isAlive() or stdout_watch.isAlive():
-#                 pass
-#             else:
-#                 break
-#             
-#         print "done"
-#         
-#         if proc.stderr:
-#             print proc.stderr
+        proc =  subprocess.Popen(cmd_lst,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE
+                                )
+         
+        stdout_watch   = Thread(target=stream_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
+        stdout_printer = Thread(target=printer, name="printer", args=(proc,self.io_q))
+         
+        stdout_watch.start()
+        stdout_printer.start()
+         
+        # wait for our auxiliary threads to die before anouncing the end
+        while True:
+            if stdout_printer.isAlive() or stdout_watch.isAlive():
+                pass
+            else:
+                break
+             
+        print "done"
+         
+        if proc.stderr:
+            print proc.stderr
 
+        # if sucessful,l_name exists
+        if exists(full_tgt_f_name):
+            os.chmod(full_tgt_f_name, 0777)
+            return full_tgt_f_name
 
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
@@ -113,5 +117,5 @@ def printer(process, queue):
                     break
             else:
                 stream_name, line = item
-                print stream_name + ':', line
+                sys.stdout.write( stream_name + ': ' + line )
 

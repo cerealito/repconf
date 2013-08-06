@@ -4,6 +4,7 @@ Created on Jul 9, 2013
 
 @author: saflores
 '''
+
 if __name__ == '__main__':
     # explicitly append the ./src directory to the current path.
     # PyDev does this Implicitly but it is better to have it explicit
@@ -105,12 +106,14 @@ def main():
     
         rsync = RSyncWrapper()
     
-        rsync.SyncSingleFile(remote_f_name, tgt_local_name, r_root, l_root)
+        etat_appli_TMP = rsync.SyncSingleFile(join(p_dir, etat_appli_f_name), 
+                             join(constants.tmp_dir, basename(etat_appli_f_name))
+                             )
     
         #myScp = SCopier()
         #etat_appli_TMP = myScp.get(join(p_dir, etat_appli_f_name),
         #                           join(constants.tmp_dir, basename(etat_appli_f_name)))
-        #local(etat_appli_TMP, opts.output, p_dir)
+        local(etat_appli_TMP, opts.output, p_dir)
     else:
         myParser.error("incorrect number of arguments. Try -h for help")
         # will exit on error.        
