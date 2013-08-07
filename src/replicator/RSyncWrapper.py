@@ -76,7 +76,7 @@ class RSyncWrapper(object):
       
                 
         cmd_lst = ['rsync',
-                   '-icvptgoL', # checksum, verbose, permissions, times, group, owner, DEREFERENCE LINKS
+                   '-cvptgoL', # checksum, verbose, permissions, times, group, owner, DEREFERENCE LINKS
                    '--files-from=' + constants.rsync_tmp,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
