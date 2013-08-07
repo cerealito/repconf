@@ -22,11 +22,12 @@ from replicator.RemoteLister import RemoteLister
 from replicator.SCopier import SCopier
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
+from replicator.logger import configure
 
 import replicator.constants as constants
 
 import os
-
+import logging
 
 def main():
     
@@ -51,6 +52,12 @@ def main():
                         help="shows available programs")
     
     opts, args = myParser.parse_args()
+
+    ##################################################################
+    # init logger
+    stderrLog = logging.getLogger('err')
+    configure(stderrLog, './errors.log')
+    
         
     ##################################################################
     # If in local mode, just one arg is needed ignore any other args
@@ -102,18 +109,17 @@ def main():
             sys.exit(-1)
         
         print 'getting remote file ' + etat_appli_f_name
-    
-    
         rsync = RSyncWrapper()
     
         etat_appli_TMP = rsync.SyncSingleFile(join(p_dir, etat_appli_f_name), 
-                             join(constants.tmp_dir, basename(etat_appli_f_name))
-                             )
-    
-        #myScp = SCopier()
-        #etat_appli_TMP = myScp.get(join(p_dir, etat_appli_f_name),
-        #                           join(constants.tmp_dir, basename(etat_appli_f_name)))
-        local(etat_appli_TMP, opts.output, p_dir)
+                                              join(constants.tmp_dir, basename(etat_appli_f_name))
+                                             )
+        
+        if exists(etat_appli_TMP):
+            local(etat_appli_TMP, opts.output, p_dir)
+        else:
+            sys.stderr.write("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
+            sys.exit(-1)
     else:
         myParser.error("incorrect number of arguments. Try -h for help")
         # will exit on error.        
@@ -152,7 +158,7 @@ def local(etat_appli_f, output=None, remote_root=None):
     try:
         myReader  = EAReader(etat_appli_f)
         mySources = myReader.getFiles(root_dir)
-        #myWriter  = ConfWriter()
+        #lsmyWriter  = ConfWriter()
         #myWriter.addEntityName(basename(etat_appli_f))
         
         anotherWriter = PlainWriter()

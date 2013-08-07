@@ -3,10 +3,9 @@ Created on Aug 2, 2013
 
 @author: saflores
 '''
-import subprocess, sys, os
+import subprocess, sys, os, logging
 import constants
 from os.path import basename, isfile, join, exists
-from time import sleep
 from Queue import Queue, Empty
 from threading import Thread
 
@@ -24,10 +23,13 @@ class RSyncWrapper(object):
         self.login = login
         self.host  = host
         self.io_q = Queue()
+        
+        self.stderrLog = logging.getLogger('err')
+        self.stdoutLog = logging.getLogger('out')
 
     def SyncSingleFile(self, remote_f_name, tgt_local_name=None):
         
-        print "attempting to rsync from " + self.host
+        #print "attempting to rsync from " + self.host
         
         if tgt_local_name is None:
             tgt_local_name = remote_f_name
@@ -35,7 +37,7 @@ class RSyncWrapper(object):
         full_remote_f_name = remote_f_name
         full_tgt_f_name    = tgt_local_name
         
-        cmd_lst = ['rsync', '-acv',
+        cmd_lst = ['rsync', '-cv',
                     self.login + '@' + self.host + ':' + full_remote_f_name,
                     full_tgt_f_name]
         
@@ -57,22 +59,25 @@ class RSyncWrapper(object):
             else:
                 break
              
-        print "done"
+        print "--"
          
         if proc.stderr:
-            print proc.stderr
+            self.stderrLog.error(proc.stderr)
 
         # if sucessful,l_name exists
         if exists(full_tgt_f_name):
             os.chmod(full_tgt_f_name, 0777)
             return full_tgt_f_name
-
+        else:
+            return None
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
         print "attempting to rsync from " + self.host
       
                 
-        cmd_lst = ['rsync', '-av', '--files-from=' + constants.rsync_tmp,
+        cmd_lst = ['rsync',
+                   '-icvptgoL', # checksum, verbose, permissions, times, group, owner, DEREFERENCE LINKS
+                   '--files-from=' + constants.rsync_tmp,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
           
@@ -98,7 +103,7 @@ class RSyncWrapper(object):
         print "done"
         
         if proc.stderr:
-            print proc.stderr
+            self.stderrLog.error(proc.stderr)
 
 ########################################
 def stream_watcher(stream_name, stream, queue):
