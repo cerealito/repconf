@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
 
 from optparse import OptionParser
+
 from os.path import dirname, basename, splitext, join, exists
 
 from replicator.EAReader import EAReader 
@@ -22,7 +23,7 @@ from replicator.RemoteLister import RemoteLister
 from replicator.SCopier import SCopier
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
-from replicator.logger import configure
+from replicator.logger import configureErrors, configureOutput
 
 import replicator.constants as constants
 
@@ -54,11 +55,13 @@ def main():
     opts, args = myParser.parse_args()
 
     ##################################################################
-    # init logger
-    stderrLog = logging.getLogger('err')
-    configure(stderrLog, './errors.log')
+    # init loggers
+    errLogger = logging.getLogger('err')
+    outLogger = logging.getLogger('out')
     
-        
+    configureErrors(errLogger, './errors.log')
+    configureOutput(outLogger, './output.log')
+    
     ##################################################################
     # If in local mode, just one arg is needed ignore any other args
     if opts.local:

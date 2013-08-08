@@ -5,7 +5,7 @@ Created on Aug 2, 2013
 '''
 import subprocess, sys, os, logging
 import constants
-from os.path import basename, isfile, join, exists
+from os.path import exists
 from Queue import Queue, Empty
 from threading import Thread
 
@@ -22,10 +22,10 @@ class RSyncWrapper(object):
         '''
         self.login = login
         self.host  = host
-        self.io_q = Queue()
+        self.io_q  = Queue()
         
-        self.stderrLog = logging.getLogger('err')
-        self.stdoutLog = logging.getLogger('out')
+        self.errLogger = logging.getLogger('err')
+        self.outLogger = logging.getLogger('out')
 
     def SyncSingleFile(self, remote_f_name, tgt_local_name=None):
         
@@ -46,7 +46,7 @@ class RSyncWrapper(object):
                                  stderr=subprocess.PIPE
                                 )
          
-        stdout_watch   = Thread(target=stream_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
+        stdout_watch   = Thread(target=s_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
         stdout_printer = Thread(target=printer, name="printer", args=(proc,self.io_q))
          
         stdout_watch.start()
@@ -58,18 +58,32 @@ class RSyncWrapper(object):
                 pass
             else:
                 break
-             
-        print "--"
          
         if proc.stderr:
-            self.stderrLog.error(proc.stderr)
+            self.errLogger.error(proc.stderr)
 
-        # if sucessful,l_name exists
-        if exists(full_tgt_f_name):
-            os.chmod(full_tgt_f_name, 0777)
-            return full_tgt_f_name
+        print "--"
+        
+        if proc.poll() == 0:
+            #success, return something 
+            # if sucessful,l_name exists
+            if exists(full_tgt_f_name):
+                os.chmod(full_tgt_f_name, 0777)
+                return full_tgt_f_name
+            else:
+                return None
         else:
-            return None
+            if proc.poll() == 255:
+                # weird error on rsync, bail out
+                self.errLogger.critical('rsync encountered some weird problem')
+                self.errLogger.critical('Are you sure you passed the Firewall?')
+                sys.exit(-1)
+            if proc.poll() == 23:
+                # remote file does not exist
+                self.errLogger.critical('Could not read remote file:')
+                self.errLogger.critical(' ' + full_remote_f_name)
+                self.errLogger.critical('use repconf.py -w <program> for available .appli files in each program')
+                sys.exit(-1)
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
         print "attempting to rsync from " + self.host
@@ -87,8 +101,8 @@ class RSyncWrapper(object):
                                  stderr=subprocess.PIPE
                                 )
         
-        stdout_watch   = Thread(target=stream_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
-        stdout_printer = Thread(target=printer, name="printer", args=(proc,self.io_q))
+        stdout_watch   = Thread(target=s_watcher, name='s_watcher', args=('rsync', proc.stdout, self.io_q))
+        stdout_printer = Thread(target=printer,   name='printer',   args=(proc,self.io_q))
         
         stdout_watch.start()
         stdout_printer.start()
@@ -100,13 +114,13 @@ class RSyncWrapper(object):
             else:
                 break
             
-        print "done"
+        print "done", proc.poll()
         
         if proc.stderr:
-            self.stderrLog.error(proc.stderr)
+            self.errLogger.error(proc.stderr)
 
 ########################################
-def stream_watcher(stream_name, stream, queue):
+def s_watcher(stream_name, stream, queue):
         for line in stream:
             queue.put( (stream_name, line) )
         if not stream.closed:
