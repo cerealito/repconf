@@ -18,9 +18,7 @@ from optparse import OptionParser
 from os.path import dirname, basename, splitext, join, exists
 
 from replicator.EAReader import EAReader 
-from replicator.ConfWriter import ConfWriter
 from replicator.RemoteLister import RemoteLister
-from replicator.SCopier import SCopier
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
 from replicator.logger import configureErrors, configureOutput
@@ -106,7 +104,7 @@ def main():
             print "Try -w for available programs"
             sys.exit(-1)
         
-        print 'getting remote file ' + etat_appli_f_name
+        outLogger.info('getting remote file ' + etat_appli_f_name)
         rsync = RSyncWrapper()
     
         etat_appli_TMP = rsync.SyncSingleFile(join(p_dir, etat_appli_f_name), 
@@ -116,7 +114,7 @@ def main():
         if exists(etat_appli_TMP):
             local(etat_appli_TMP, p_dir)
         else:
-            sys.stderr.write("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
+            self.errLogger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
             sys.exit(-1)
     else:
         myParser.error("incorrect number of arguments. Try -h for help")

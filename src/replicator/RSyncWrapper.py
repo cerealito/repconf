@@ -61,7 +61,7 @@ class RSyncWrapper(object):
                 break
          
         if proc.stderr:
-            self.errLogger.error(proc.stderr)
+            self.errLogger.warning(proc.stderr)
 
         self.outLogger.info("--")
         
@@ -125,7 +125,7 @@ class RSyncWrapper(object):
         self.outLogger.info('done (' + str(proc.poll()) + ')' )
         
         if proc.stderr:
-            self.errLogger.error(proc.stderr)
+            self.errLogger.warning(proc.stderr)
 
 ########################################
 def s_watcher(stream_name, stream, queue):

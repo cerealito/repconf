@@ -8,7 +8,6 @@ def configureErrors(logger_p, path='./Log.txt'):
     if 0 == len(logger_p.handlers): 
         logger_p.setLevel(logging.DEBUG)
         
-        
         # this will make the project logger write all messages in a file
         file_handler = logging.FileHandler(path, mode = 'w')
         line_format  = "%(levelname)s" + ": %(message)s "
@@ -24,7 +23,8 @@ def configureErrors(logger_p, path='./Log.txt'):
         c_formatter     = logging.Formatter(line_format)
         console_handler.setFormatter(c_formatter)
         
-        console_handler.setLevel(logging.CRITICAL)
+        #ignore debug and info
+        console_handler.setLevel(logging.ERROR)
     
         logger_p.addHandler(console_handler)
     else:
@@ -38,13 +38,14 @@ def configureOutput(logger_p, path='./Log.txt'):
     if 0 == len(logger_p.handlers): 
         
         logger_p.setLevel(logging.DEBUG)
-        
+
         # this will make the project logger write all messages in a file
         file_handler = logging.FileHandler(path, mode = 'w')
         fh_formatter  = logging.Formatter('%(message)s')
         file_handler.setFormatter(fh_formatter)
         
-        file_handler.setLevel(logging.INFO)
+        #ignore debug messages
+        file_handler.setLevel(logging.DEBUG)
         
         logger_p.addHandler(file_handler)
         
@@ -55,6 +56,7 @@ def configureOutput(logger_p, path='./Log.txt'):
         ch_formatter     = logging.Formatter('%(message)s')
         console_handler.setFormatter(ch_formatter)
         
+        #ignore debug messages
         console_handler.setLevel(logging.INFO)
     
         logger_p.addHandler(console_handler)

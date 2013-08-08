@@ -56,7 +56,7 @@ class EAReader(object):
         for tag in self.interesting_tags:                       
             tag_lst = elementTag.getElementsByTagName(tag)
             
-            self.outLogger.debug(">>> " + tag + ":")
+            #self.outLogger.debug(">>> " + tag + ":")
             #################################
             for i in range( tag_lst.length) :
                 
