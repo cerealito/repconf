@@ -9,7 +9,7 @@ from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from os.path import join
 
-import sys
+import sys, logging
 
 class EAReader(object):
     '''
@@ -20,13 +20,15 @@ class EAReader(object):
         '''
         Constructor
         '''
-
+        self.errLogger = logging.getLogger('err')
+        self.outLogger = logging.getLogger('out')
+        
         try:        
             self.ea_xmldoc = minidom.parse(ea_file)
         except ExpatError, e:
-            sys.stderr.write(str(e) + '\n')
-            sys.exit('Input file '+ ea_file + ' is not a well formed xml file')
-        
+            self.errLogger.critical(str(e) + '\n')
+            self.errLogger.critical('Input file '+ ea_file + ' is not a well formed xml file')
+            sys.exit(-1)
         self.interesting_tags = ["Taches",
                        "Sequencement",
                        "Exceptions",
@@ -54,7 +56,7 @@ class EAReader(object):
         for tag in self.interesting_tags:                       
             tag_lst = elementTag.getElementsByTagName(tag)
             
-            #print ">>> " + tag + ":"
+            self.outLogger.debug(">>> " + tag + ":")
             #################################
             for i in range( tag_lst.length) :
                 

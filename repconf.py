@@ -35,11 +35,6 @@ def main():
     usage = "usage: repconf [options] program file.appli"
     myParser = OptionParser(usage)
     
-    myParser.add_option("-o",
-                        "--output",
-                        dest="output",
-                        help="write output to FILE")
-    
     myParser.add_option("-l",
                         "--local",
                         action="store_true",
@@ -66,7 +61,7 @@ def main():
     # If in local mode, just one arg is needed ignore any other args
     if opts.local:
         etat_appli_f_name = args[0]
-        local(etat_appli_f_name, opts.output)
+        local(etat_appli_f_name)
         # TODO: exit status should reflect the success or failure of the command 
         sys.exit(0)
     
@@ -119,7 +114,7 @@ def main():
                                              )
         
         if exists(etat_appli_TMP):
-            local(etat_appli_TMP, opts.output, p_dir)
+            local(etat_appli_TMP, p_dir)
         else:
             sys.stderr.write("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
             sys.exit(-1)
@@ -135,7 +130,10 @@ def main():
         
         
 
-def local(etat_appli_f, output=None, remote_root=None):
+def local(etat_appli_f, remote_root=None):
+    
+    errLogger = logging.getLogger('err')
+    outLogger = logging.getLogger('out')
     
     if remote_root:
         # apply dirname twice because we want the parent of the parent
@@ -145,24 +143,16 @@ def local(etat_appli_f, output=None, remote_root=None):
         root_dir     =  dirname(dirname(etat_appli_f))
 
     f, ext = splitext(basename(etat_appli_f))      
-    output_f     = "conf_" + f + ".xml"
-    
-    # rename output if needed
-    if output:
-        output_f = output
     
     #give user some output
-    print
-    print 'etat appli : ' + etat_appli_f
-    print 'remote root: ' + root_dir
+    outLogger.info('etat appli : ' + etat_appli_f)
+    outLogger.info('remote root: ' + root_dir)
     
     
     #TODO: check for errors
     try:
         myReader  = EAReader(etat_appli_f)
         mySources = myReader.getFiles(root_dir)
-        #lsmyWriter  = ConfWriter()
-        #myWriter.addEntityName(basename(etat_appli_f))
         
         anotherWriter = PlainWriter()
         anotherWriter.addSources(mySources)
@@ -174,10 +164,7 @@ def local(etat_appli_f, output=None, remote_root=None):
         #most probably the passed file is not an etat appli
         sys.exit("The input file is not an appropriate etat.appli ")
     
-    print "appending " + str(len(mySources)) + " repSrc elements"
-    
-    #myWriter.addSources(mySources)
-    #myWriter.writeTo(output_f)
+    outLogger.info("appending " + str(len(mySources)) + " repSrc elements")
     
     anotherWriter.writeTo(constants.rsync_tmp)
     

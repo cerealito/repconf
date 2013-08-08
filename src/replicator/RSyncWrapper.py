@@ -29,7 +29,7 @@ class RSyncWrapper(object):
 
     def SyncSingleFile(self, remote_f_name, tgt_local_name=None):
         
-        #print "attempting to rsync from " + self.host
+        self.outLogger.debug('attempting to rsync from ' + self.host)
         
         if tgt_local_name is None:
             tgt_local_name = remote_f_name
@@ -41,6 +41,7 @@ class RSyncWrapper(object):
                     self.login + '@' + self.host + ':' + full_remote_f_name,
                     full_tgt_f_name]
         
+        self.outLogger.debug(cmd_lst)
         proc =  subprocess.Popen(cmd_lst,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE
@@ -62,7 +63,7 @@ class RSyncWrapper(object):
         if proc.stderr:
             self.errLogger.error(proc.stderr)
 
-        print "--"
+        self.outLogger.info("--")
         
         if proc.poll() == 0:
             #success, return something 
@@ -73,20 +74,27 @@ class RSyncWrapper(object):
             else:
                 return None
         else:
-            if proc.poll() == 255:
-                # weird error on rsync, bail out
-                self.errLogger.critical('rsync encountered some weird problem')
-                self.errLogger.critical('Are you sure you passed the Firewall?')
-                sys.exit(-1)
+
             if proc.poll() == 23:
                 # remote file does not exist
                 self.errLogger.critical('Could not read remote file:')
                 self.errLogger.critical(' ' + full_remote_f_name)
                 self.errLogger.critical('use repconf.py -w <program> for available .appli files in each program')
                 sys.exit(-1)
+                
+            if proc.poll() == 255:
+                # weird error on rsync, bail out
+                self.errLogger.critical('rsync timed out')
+                self.errLogger.critical('Are you sure you passed the Firewall?')
+                sys.exit(-1)
+            else:
+                self.errLogger.critical('unknown error with rsync')
+                self.errLogger.critical('check your permissions')
+                sys.exit(-1)
+                
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
-        print "attempting to rsync from " + self.host
+        self.outLogger.debug('attempting to rsync from ' + self.host)
       
                 
         cmd_lst = ['rsync',
@@ -95,7 +103,7 @@ class RSyncWrapper(object):
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
           
-         
+        self.outLogger.debug(cmd_lst)
         proc =  subprocess.Popen(cmd_lst,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE
@@ -114,27 +122,30 @@ class RSyncWrapper(object):
             else:
                 break
             
-        print "done", proc.poll()
+        self.outLogger.info('done (' + str(proc.poll()) + ')' )
         
         if proc.stderr:
             self.errLogger.error(proc.stderr)
 
 ########################################
 def s_watcher(stream_name, stream, queue):
-        for line in stream:
-            queue.put( (stream_name, line) )
-        if not stream.closed:
-            stream.close()
+    for line in stream:
+        queue.put( (stream_name, line) )
+    if not stream.closed:
+        stream.close()
 
 ########################################
 def printer(process, queue):
-        while True:
-            try:
-                item = queue.get(True, 1)
-            except Empty:
-                if process.poll() is not None:
-                    break
-            else:
-                stream_name, line = item
-                sys.stdout.write( stream_name + ': ' + line )
+    outLogger = logging.getLogger('out')
+    while True:
+        try:
+            item = queue.get(True, 1)
+        except Empty:
+            if process.poll() is not None:
+                break
+        else:
+            stream_name, line = item
+            if line.endswith('\n'):
+                line = line[:-1]
+            outLogger.info( stream_name + ': ' + line )
 
