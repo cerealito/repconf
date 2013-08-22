@@ -39,7 +39,7 @@ def main():
                         dest="local",
                         help="use a local file as input instead of downloading from remote filer")
     
-    myParser.add_option("-w",
+    myParser.add_option("-?",
                         "--what",
                         action="store_true",
                         dest="show_available",
@@ -54,6 +54,12 @@ def main():
     
     configureErrors(errLogger, './errors.log')
     configureOutput(outLogger, './output.log')
+
+    ##################################################################
+    # create tmp dir:
+    if not exists(constants.tmp_dir):
+        os.makedirs(constants.tmp_dir, 0775)
+    
     
     ##################################################################
     # If in local mode, just one arg is needed ignore any other args
@@ -74,7 +80,7 @@ def main():
             for k,v in constants.programs.items():
                 print k + ' : ' + v
              
-            print 'try -w <program> for available .appli files in each program'
+            print 'try \'./repconf.py <program> -?\' for available .appli files in each program'
             
         if len(args) > 0:
             p     = args[0]
@@ -82,7 +88,7 @@ def main():
             
             if p_dir == None:
                 print "Do not know about program " + p
-                print "Try -w for available programs"
+                print "Try -? for available programs"
                 sys.exit(-1)
             
             print 'listing available appli files in ' + p
@@ -101,15 +107,19 @@ def main():
         
         if p_dir == None:
             print "Do not know about program " + p
-            print "Try -w for available programs"
+            print "Try -? for available programs"
             sys.exit(-1)
         
         outLogger.info('getting remote file ' + etat_appli_f_name)
         rsync = RSyncWrapper()
     
-        etat_appli_TMP = rsync.SyncSingleFile(join(p_dir, etat_appli_f_name), 
-                                              join(constants.tmp_dir, basename(etat_appli_f_name))
-                                             )
+        f_r_src = join(p_dir, etat_appli_f_name);
+        f_l_dst = constants.local_root + '/' + join(p_dir, basename(etat_appli_f_name))
+    
+        outLogger.debug('full remote source is    :' + f_r_src)
+        outLogger.debug('full local destination is:' + f_l_dst)
+        
+        etat_appli_TMP = rsync.SyncSingleFile(f_r_src, f_l_dst)
         
         if exists(etat_appli_TMP):
             local(etat_appli_TMP, p_dir)

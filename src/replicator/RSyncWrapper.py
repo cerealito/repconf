@@ -5,7 +5,7 @@ Created on Aug 2, 2013
 '''
 import subprocess, sys, os, logging
 import constants
-from os.path import exists
+from os.path import exists, dirname
 from Queue import Queue, Empty
 from threading import Thread
 
@@ -27,19 +27,22 @@ class RSyncWrapper(object):
         self.errLogger = logging.getLogger('err')
         self.outLogger = logging.getLogger('out')
 
-    def SyncSingleFile(self, remote_f_name, tgt_local_name=None):
+    def SyncSingleFile(self, remote_f_name, tgt_local_name):
         
         self.outLogger.debug('attempting to rsync from ' + self.host)
-        
-        if tgt_local_name is None:
-            tgt_local_name = remote_f_name
       
-        full_remote_f_name = remote_f_name
-        full_tgt_f_name    = tgt_local_name
+        if remote_f_name is None or tgt_local_name is None:
+            raise ValueError
+      
+        # rsync will not create directories in this mode
+        if not exists(dirname(tgt_local_name)):
+            os.makedirs(dirname(tgt_local_name), 0777)
+        
+        tgt_local_name    = tgt_local_name
         
         cmd_lst = ['rsync', '-cv',
-                    self.login + '@' + self.host + ':' + full_remote_f_name,
-                    full_tgt_f_name]
+                    self.login + '@' + self.host + ':' + remote_f_name,
+                    tgt_local_name]
         
         self.outLogger.debug(cmd_lst)
         proc =  subprocess.Popen(cmd_lst,
@@ -68,9 +71,9 @@ class RSyncWrapper(object):
         if proc.poll() == 0:
             #success, return something 
             # if sucessful,l_name exists
-            if exists(full_tgt_f_name):
-                os.chmod(full_tgt_f_name, 0777)
-                return full_tgt_f_name
+            if exists(tgt_local_name):
+                os.chmod(tgt_local_name, 0777)
+                return tgt_local_name
             else:
                 return None
         else:
@@ -78,7 +81,7 @@ class RSyncWrapper(object):
             if proc.poll() == 23:
                 # remote file does not exist
                 self.errLogger.critical('Could not read remote file:')
-                self.errLogger.critical(' ' + full_remote_f_name)
+                self.errLogger.critical(' ' + remote_f_name)
                 self.errLogger.critical('use repconf.py -w <program> for available .appli files in each program')
                 sys.exit(-1)
                 
@@ -98,7 +101,7 @@ class RSyncWrapper(object):
       
                 
         cmd_lst = ['rsync',
-                   '-cvptgoL', # checksum, verbose, permissions, times, group, owner, DEREFERENCE LINKS
+                   '-cvptgol', # checksum, verbose, permissions, times, group, owner, copy likns as links
                    '--files-from=' + constants.rsync_tmp,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
