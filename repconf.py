@@ -10,7 +10,11 @@ if __name__ == '__main__':
     # PyDev does this Implicitly but it is better to have it explicit
     # this makes the tool work the same in tests and in CLI
     import sys
-    sys.path.append("./src")
+    import inspect
+    from os.path import dirname, abspath, join
+    #when in CLI use inspect to locate the source directory
+    src_dir = join(dirname(abspath(inspect.getfile(inspect.currentframe()))),'src')
+    sys.path.append(src_dir)
 
 
 from optparse import OptionParser
@@ -27,6 +31,7 @@ import replicator.constants as constants
 
 import os
 import logging
+import ConfigParser
 
 def main():
     
@@ -47,20 +52,21 @@ def main():
     
     opts, args = myParser.parse_args()
 
+    
+
+    ##################################################################
+    # create tmp dir and default settings for first time use
+    initialize()
+
+
     ##################################################################
     # init loggers
     errLogger = logging.getLogger('err')
     outLogger = logging.getLogger('out')
     
-    configureErrors(errLogger, './errors.log')
-    configureOutput(outLogger, './output.log')
-
-    ##################################################################
-    # create tmp dir:
-    if not exists(constants.tmp_dir):
-        os.makedirs(constants.tmp_dir, 0775)
-    
-    
+    configureErrors(errLogger, join(constants.tmp_d, 'errors.log') )
+    configureOutput(outLogger, join(constants.tmp_d, 'output.log') )
+   
     ##################################################################
     # If in local mode, just one arg is needed ignore any other args
     if opts.local:
@@ -131,13 +137,7 @@ def main():
         # will exit on error.        
        
         
-    ##################################################################
-    # If no error, start doing the stuff
-
-        
-        
-        
-
+######################################################################
 def local(etat_appli_f, remote_root=None):
     
     errLogger = logging.getLogger('err')
@@ -180,7 +180,37 @@ def local(etat_appli_f, remote_root=None):
     rsync = RSyncWrapper()
     
     rsync.SyncFilesFrom(constants.rsync_tmp, constants.remote_root, constants.local_root)
-    
 
+    
+######################################################################
+def initialize():
+    if not exists(constants.settings_f):
+        
+        if not exists(constants.tmp_d):
+            os.makedirs(constants.tmp_d, 0775)
+                
+        print 'Initializing with default settings ' + constants.settings_f
+    
+        settings_f = open(constants.settings_f, 'w')
+        
+        contents = [
+             '# Default settings file for repconf',
+             '# Fill with the proper values      ',
+             '                                   ',
+             '[DEFAULT]',
+             '# the login name to use in the remote location',
+             'username: toto',
+             '# the ip or hostname of the remote rsync server',
+             'server  : 195.220.10.144',
+             '\n'
+             ]
+        
+        for line in contents:
+            settings_f.write(line)
+            settings_f.write('\n')
+            
+        settings_f.close()
+
+######################################################################    
 if __name__ == '__main__':
     main()
