@@ -16,7 +16,7 @@ class RSyncWrapper(object):
     '''
 
 
-    def __init__(self, login=constants.default_login, host=constants.default_host):
+    def __init__(self, login, host):
         '''
         Constructor
         '''

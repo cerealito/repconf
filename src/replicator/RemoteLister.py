@@ -5,8 +5,6 @@ Created on Jul 31, 2013
 '''
 
 import subprocess
-import constants
-
 
 class RemoteLister(object):
     '''
@@ -14,18 +12,20 @@ class RemoteLister(object):
     a remote file system for files
     '''
 
-    def __init__(self,params):
+    def __init__(self, login, host):
         '''
         Constructor
         '''
+        self.login = login
+        self.host  = host
 
-    @staticmethod        
-    def ls(f, passFilter):
+        
+    def ls(self, f, passFilter):
         '''
             pass filter will be passed to GREP
         '''
         
-        cmd_lst = ['ssh', constants.default_login + '@' + constants.default_host, 'ls', '-1', f, '|', 'grep', passFilter]
+        cmd_lst = ['ssh', self.login + '@' + self.host, 'ls', '-1', f, '|', 'grep', passFilter]
         
         proc =  subprocess.Popen(cmd_lst,
                                  stdout=subprocess.PIPE,
