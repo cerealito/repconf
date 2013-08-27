@@ -4,7 +4,6 @@ Created on Jul 9, 2013
 
 @author: saflores
 '''
-from distutils.command.config import config
 
 if __name__ == '__main__':
     # explicitly append the ./src directory to the current path.
@@ -20,6 +19,7 @@ if __name__ == '__main__':
 
 from optparse import OptionParser
 from os.path import dirname, basename, splitext, join, exists
+from os import environ
 
 from replicator.EAReader import EAReader 
 from replicator.RemoteLister import RemoteLister
@@ -28,6 +28,7 @@ from replicator.RSyncWrapper import RSyncWrapper
 from replicator.logger import configureErrors, configureOutput
 
 import replicator.constants as constants
+
 
 import os
 import logging
@@ -218,8 +219,8 @@ class Repconf:
                  '# Fill with the proper values      ',
                  '                                   ',
                  '[DEFAULT]',
-                 '# the login name to use in the remote location',
-                 'login: toto',
+                 '# the login name to use in the _remote_ location',
+                 'login: ' + environ.get('USER'),
                  '# the ip or hostname of the remote rsync server',
                  'host : 195.220.10.144',
                  '\n'
