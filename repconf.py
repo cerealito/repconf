@@ -35,7 +35,8 @@ import ConfigParser
 
 
 class Repconf:
-    
+
+    #######################################################
     def __init__(self):
         self.initializeTmpDir()
         
@@ -44,7 +45,8 @@ class Repconf:
         
         self.host  = config.get('DEFAULT','host')
         self.login = config.get('DEFAULT','login')
-    
+        
+    #######################################################
     def main(self):
         
         usage = "usage: repconf [options] program file.appli"
@@ -65,7 +67,7 @@ class Repconf:
         opts, args = myParser.parse_args()
     
        
-        ##################################################################
+        ###############################
         # init loggers
         errLogger = logging.getLogger('err')
         outLogger = logging.getLogger('out')
@@ -73,7 +75,7 @@ class Repconf:
         configureErrors(errLogger, join(constants.tmp_d, 'errors.log') )
         configureOutput(outLogger, join(constants.tmp_d, 'output.log') )
        
-        ##################################################################
+        ###############################
         # If in local mode, just one arg is needed ignore any other args
         if opts.local:
             etat_appli_f_name = args[0]
@@ -83,7 +85,7 @@ class Repconf:
             # TODO: exit status should reflect the success or failure of the command 
             sys.exit(0)
         
-        ##################################################################
+        ###############################
         # show available .appli files in remote file system,
         #then exits, regardless of any other options
         if opts.show_available:
@@ -111,7 +113,7 @@ class Repconf:
             
             sys.exit(0)
         
-        ##################################################################
+        ###############################
         # If in remote mode
         if len(args) == 2:
             p     = args[0]
@@ -148,8 +150,14 @@ class Repconf:
             # will exit on error.        
            
             
-    ######################################################################
+    #######################################################
     def extractFilesFromAppliXML(self, etat_appli_f, remote_root=None):
+        '''
+            Takes an XML file that represents a simulation application
+            (etat.appli) returns the path to a temporary file that
+            contains all the files listed in it. It will precede each file
+            with the optional string remote_root.
+        '''
         
         errLogger = logging.getLogger('err')
         outLogger = logging.getLogger('out')
@@ -188,11 +196,9 @@ class Repconf:
         anotherWriter.writeTo(constants.rsync_tmp)
         
         return constants.rsync_tmp
-        
 
-    
         
-    ######################################################################
+    #######################################################
     def initializeTmpDir(self):
         '''
         creates tmp dir and default settings for first time use
@@ -225,7 +231,7 @@ class Repconf:
                 
             settings_f.close()
     
-    ######################################################################    
+###############################################################################
 if __name__ == '__main__':
     myRepconf = Repconf()
     myRepconf.main()

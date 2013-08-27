@@ -36,7 +36,12 @@ class RSyncWrapper(object):
       
         # rsync will not create directories in this mode
         if not exists(dirname(tgt_local_name)):
-            os.makedirs(dirname(tgt_local_name), 0777)
+            try:
+                os.makedirs(dirname(tgt_local_name), 0777)
+            except OSError, e:
+                self.errLogger.critical('Error creating target directories. Can not continue')
+                self.errLogger.critical(e)
+                sys.exit(-1)
         
         tgt_local_name    = tgt_local_name
         
