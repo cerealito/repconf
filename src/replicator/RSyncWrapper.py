@@ -24,7 +24,6 @@ class RSyncWrapper(object):
         self.host  = host
         self.io_q  = Queue()
         
-        self.errLogger = logging.getLogger('err')
         self.outLogger = logging.getLogger('out')
 
     def SyncSingleFile(self, remote_f_name, tgt_local_name):
@@ -39,8 +38,8 @@ class RSyncWrapper(object):
             try:
                 os.makedirs(dirname(tgt_local_name), 0777)
             except OSError, e:
-                self.errLogger.critical('Error creating target directories. Can not continue')
-                self.errLogger.critical(e)
+                self.outLogger.critical('Error creating target directories. Can not continue')
+                self.outLogger.critical(e)
                 sys.exit(-1)
         
         tgt_local_name    = tgt_local_name
@@ -55,22 +54,21 @@ class RSyncWrapper(object):
                                  stderr=subprocess.PIPE
                                 )
          
-        stdout_watch   = Thread(target=s_watcher, name='rsync stream watcher', args=('rsync', proc.stdout, self.io_q))
+        stdout_watcher   = Thread(target=s_watcher, name='rsync stdout watcher', args=('rsync', proc.stdout, self.io_q))
+        stderr_watcher   = Thread(target=s_watcher, name='rsync stderr watcher', args=('rsync_warning', proc.stderr, self.io_q))
         stdout_printer = Thread(target=printer, name="printer", args=(proc,self.io_q))
          
-        stdout_watch.start()
+        stdout_watcher.start()
+        stderr_watcher.start()
         stdout_printer.start()
          
         # wait for our auxiliary threads to die before anouncing the end
         while True:
-            if stdout_printer.isAlive() or stdout_watch.isAlive():
+            if stdout_printer.isAlive() or stdout_watcher.isAlive():
                 pass
             else:
                 break
          
-        if proc.stderr:
-            self.errLogger.warning(proc.stderr)
-
         self.outLogger.info("--")
         
         if proc.poll() == 0:
@@ -85,19 +83,19 @@ class RSyncWrapper(object):
 
             if proc.poll() == 23:
                 # remote file does not exist
-                self.errLogger.critical('Could not read remote file:')
-                self.errLogger.critical(' ' + remote_f_name)
-                self.errLogger.critical('use repconf.py -w <program> for available .appli files in each program')
+                self.outLogger.critical('Could not read remote file:')
+                self.outLogger.critical(' ' + remote_f_name)
+                self.outLogger.critical('use repconf.py -w <program> for available .appli files in each program')
                 sys.exit(-1)
                 
             if proc.poll() == 255:
                 # weird error on rsync, bail out
-                self.errLogger.critical('rsync timed out')
-                self.errLogger.critical('Are you sure you passed the Firewall?')
+                self.outLogger.critical('rsync timed out')
+                self.outLogger.critical('Are you sure you passed the Firewall?')
                 sys.exit(-1)
             else:
-                self.errLogger.critical('unknown error with rsync')
-                self.errLogger.critical('check your permissions')
+                self.outLogger.critical('unknown error with rsync')
+                self.outLogger.critical('check your permissions')
                 sys.exit(-1)
                 
         
@@ -117,23 +115,25 @@ class RSyncWrapper(object):
                                  stderr=subprocess.PIPE
                                 )
         
-        stdout_watch   = Thread(target=s_watcher, name='s_watcher', args=('rsync', proc.stdout, self.io_q))
-        stdout_printer = Thread(target=printer,   name='printer',   args=(proc,self.io_q))
         
-        stdout_watch.start()
+        stdout_watcher = Thread(target=s_watcher, name='s_watcher', args=('rsync', proc.stdout, self.io_q))
+        stderr_watcher = Thread(target=s_watcher, name='e_watcher', args=('rsync_warning', proc.stderr, self.io_q))
+        stdout_printer = Thread(target=printer,   name='s_printer',   args=(proc,self.io_q))
+        
+        stdout_watcher.start()
+        stderr_watcher.start()
         stdout_printer.start()
+        
         
         # wait for our auxiliary threads to die before anouncing the end
         while True:
-            if stdout_printer.isAlive() or stdout_watch.isAlive():
+            if stdout_printer.isAlive() or stdout_watcher.isAlive():
                 pass
             else:
                 break
             
         self.outLogger.info('done (' + str(proc.poll()) + ')' )
         
-        if proc.stderr:
-            self.errLogger.warning(proc.stderr)
 
 ########################################
 def s_watcher(stream_name, stream, queue):
@@ -155,5 +155,9 @@ def printer(process, queue):
             stream_name, line = item
             if line.endswith('\n'):
                 line = line[:-1]
-            outLogger.info( stream_name + ': ' + line )
+                
+            if stream_name != 'rsync':
+                outLogger.warning(line)
+            else:
+                outLogger.info( stream_name + ': ' + line )
 

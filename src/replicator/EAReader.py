@@ -20,14 +20,13 @@ class EAReader(object):
         '''
         Constructor
         '''
-        self.errLogger = logging.getLogger('err')
         self.outLogger = logging.getLogger('out')
         
         try:        
             self.ea_xmldoc = minidom.parse(ea_file)
         except ExpatError, e:
-            self.errLogger.critical(str(e) + '\n')
-            self.errLogger.critical('Input file '+ ea_file + ' is not a well formed xml file')
+            self.outLogger.critical(str(e) + '\n')
+            self.outLogger.critical('Input file '+ ea_file + ' is not a well formed xml file')
             sys.exit(-1)
         self.interesting_tags = ["Taches",
                        "Sequencement",

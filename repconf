@@ -7,7 +7,7 @@ Created on Jul 9, 2013
 
 if __name__ == '__main__':
     # explicitly append the ./src directory to the current path.
-    # PyDev does this Implicitly but it is better to have it explicit
+    # PyDev does this implicitly but it is better to have it explicit
     # this makes the tool work the same in tests and in CLI
     import sys
     import inspect
@@ -25,12 +25,13 @@ from replicator.EAReader import EAReader
 from replicator.RemoteLister import RemoteLister
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
-from replicator.logger import configureErrors, configureOutput
+from replicator.logger import configureOutput
 
 import replicator.constants as constants
 
 
 import os
+import re
 import logging
 import ConfigParser
 
@@ -70,10 +71,8 @@ class Repconf:
        
         ###############################
         # init loggers
-        errLogger = logging.getLogger('err')
         outLogger = logging.getLogger('out')
         
-        configureErrors(errLogger, join(constants.tmp_d, 'errors.log') )
         configureOutput(outLogger, join(constants.tmp_d, 'output.log') )
        
         ###############################
@@ -140,27 +139,42 @@ class Repconf:
             
             if exists(etat_appli_TMP):
                 
-                rsync_filelist_f = self.extractFilesFromAppliXML(etat_appli_TMP, p_dir)
+                rsync_filelist_f, extras = self.extractFilesFromAppliXML(etat_appli_TMP, p_dir)
+                
                 rsync.SyncFilesFrom(rsync_filelist_f, constants.remote_root, constants.local_root)
                 
+                if len(extras) > 0 :
+                    outLogger.info("processing extra files")
+                    #self.processExtras(extras)
+                    
+                
             else:
-                self.errLogger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
+                self.outLogger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
                 sys.exit(-1)
         else:
             myParser.error("incorrect number of arguments. Try -h for help")
             # will exit on error.        
-           
+
+    #######################################################
+    def processExtras(self, extras):
+        print "will process this files" 
+        for f in extras:
+            ExtraFileReader(f)      
+
+        
             
     #######################################################
     def extractFilesFromAppliXML(self, etat_appli_f, remote_root=None):
         '''
             Takes an XML file that represents a simulation application
-            (etat.appli) returns the path to a temporary file that
-            contains all the files listed in it. It will precede each file
-            with the optional string remote_root.
+            (etat.appli) returns a tuple:
+            - the path to a temporary file that contains all the files
+            listed in etat_appli_f. The optional string remote_root
+            is used to construct the full path of the remote files 
+            - an array of EXTRA files to parse
         '''
         
-        errLogger = logging.getLogger('err')
+        outLogger = logging.getLogger('err')
         outLogger = logging.getLogger('out')
         
         if remote_root:
@@ -173,8 +187,9 @@ class Repconf:
         f, ext = splitext(basename(etat_appli_f))      
         
         #give user some output
-        outLogger.info('etat appli : ' + etat_appli_f)
+        
         outLogger.info('remote root: ' + root_dir)
+        outLogger.info('etat appli : application/' + basename(etat_appli_f))
         
         
         #TODO: check for errors
@@ -192,11 +207,17 @@ class Repconf:
             #most probably the passed file is not an etat appli
             sys.exit("The input file is not an appropriate etat.appli ")
         
-        outLogger.info("appending " + str(len(mySources)) + " repSrc elements")
+        outLogger.debug("Creating tmp file with " + str(len(mySources)) + " repSrc elements")
         
         anotherWriter.writeTo(constants.rsync_tmp)
         
-        return constants.rsync_tmp
+        #### Check if there are any Applications_*.xml files
+        extras = []
+        for s in mySources:
+            if re.match('.*Applications_.*xml$', str(s)) :
+                 extras.append(str(s))
+        
+        return constants.rsync_tmp, extras
 
         
     #######################################################
