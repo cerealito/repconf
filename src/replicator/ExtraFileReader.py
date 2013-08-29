@@ -9,7 +9,7 @@ from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from os.path import join, dirname, basename
 
-import sys, logging
+import logging
 
 class ExtraFileReader(object):
     '''
@@ -27,15 +27,17 @@ class ExtraFileReader(object):
         except ExpatError, e:
             self.outLogger.critical(str(e) + '\n')
             self.outLogger.critical('Input file '+ ea_file + ' is not a well formed xml file')
-            sys.exit(-1)
+            raise ExpatError('Not a proper application file: ' + ea_file )
+        except IOError, e:
+            raise e
             
         self.interesting_tags = [ 'Batch', 'Shell' ]
     
     def getFiles(self):
         if self.getVersion() == 1:
-            return self.getFilesV1()
+            return self.__getFilesV1()
         else:
-            return self.getFilesV2()
+            return self.__getFilesV2()
     
     def getVersion(self):
         # dali V2 extras have "Scripts" tag
@@ -46,7 +48,7 @@ class ExtraFileReader(object):
         else:
             return 1
     
-    def getFilesV1(self):
+    def __getFilesV1(self):
         '''
             blahhh
         '''
@@ -56,12 +58,8 @@ class ExtraFileReader(object):
         
         kshScriptsDir = ShellsTag.getAttribute("path") 
         batScriptsDir = join(dirname(kshScriptsDir), "BATCH")        
-        print 'ksh     in:' + kshScriptsDir
-        print 'batches in:' + batScriptsDir
-        
-        
+                
         lst_repsrc = []
-
         #################################
         for tag in self.interesting_tags:                       
             tag_lst = self.ea_xmldoc.getElementsByTagName(tag)
@@ -97,7 +95,7 @@ class ExtraFileReader(object):
         #################################        
         return lst_repsrc
 
-    def getFilesV2(self):
+    def __getFilesV2(self):
         '''
         gets all the interesting files and puts them on a list of RepSrc
         '''
@@ -109,13 +107,8 @@ class ExtraFileReader(object):
         allScriptsRoot = ProjectTag.getAttribute("ux_root")
         batScriptsDir  = join( ScriptsTag.getAttribute("scripts_path"), 'BATCH') 
         kshScriptsDir  = join( ScriptsTag.getAttribute("scripts_path"), 'SH'   )
-        
-        print 'batches in:' + batScriptsDir
-        print 'ksh     in:' + kshScriptsDir
-        
-        lst_repsrc = []
-
-        
+    
+        lst_repsrc = []        
         #################################
         for tag in self.interesting_tags:                       
             tag_lst = ScriptsTag.getElementsByTagName(tag)

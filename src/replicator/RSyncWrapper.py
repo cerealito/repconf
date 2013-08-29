@@ -22,11 +22,12 @@ class RSyncWrapper(object):
         '''
         self.login = login
         self.host  = host
-        self.io_q  = Queue()
+        self.io_q  = None
         
         self.outLogger = logging.getLogger('out')
 
     def SyncSingleFile(self, remote_f_name, tgt_local_name):
+        self.io_q  = Queue()
         
         self.outLogger.debug('attempting to rsync from ' + self.host)
       
@@ -101,11 +102,11 @@ class RSyncWrapper(object):
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
         self.outLogger.debug('attempting to rsync from ' + self.host)
-      
+        self.io_q  = Queue()
                 
         cmd_lst = ['rsync',
                    '-cvptgol', # checksum, verbose, permissions, times, group, owner, copy likns as links
-                   '--files-from=' + constants.rsync_tmp,
+                   '--files-from=' + input_f_name,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
           
@@ -124,15 +125,14 @@ class RSyncWrapper(object):
         stderr_watcher.start()
         stdout_printer.start()
         
-        
         # wait for our auxiliary threads to die before anouncing the end
         while True:
             if stdout_printer.isAlive() or stdout_watcher.isAlive():
                 pass
             else:
                 break
-            
-        self.outLogger.info('done (' + str(proc.poll()) + ')' )
+        
+        self.outLogger.info('rsync done (' + str(proc.poll()) + ')' )
         
 
 ########################################
@@ -159,5 +159,5 @@ def printer(process, queue):
             if stream_name != 'rsync':
                 outLogger.warning(line)
             else:
-                outLogger.info( stream_name + ': ' + line )
+                outLogger.info(line)
 

@@ -26,7 +26,8 @@ remote_root = '/'
 # temp dir is hidden in the user's home
 tmp_d    = join(environ.get('HOME'), '.repconf_d/')
 
-settings_f = join(tmp_d, 'settings.txt') 
-rsync_tmp  = join(tmp_d, 'file_list.txt')
+settings_f = join(tmp_d, 'settings.cfg') 
+rsync_tmp = join(tmp_d, 'files_in_etat_appli.txt')
+rsync_tmp_extras = join(tmp_d, 'scripts.txt')
 
     

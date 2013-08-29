@@ -13,7 +13,7 @@ def configureOutput(logger_p, path='./Log.txt'):
 
         # this will make the project logger write all messages in a file
         file_handler = FileHandler(path, mode = 'w')
-        file_handler.setFormatter(Formatter('%(message)s'))
+        file_handler.setFormatter(Formatter('%(levelname)-8s : %(message)s'))
         
         # accept even the most trivial shit
         file_handler.setLevel(logging.DEBUG)

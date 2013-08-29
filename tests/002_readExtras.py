@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
             print src
             
     def testReadV1(self):
-        f = './DALI_V1.xml'
+        f = '../README.md'
         print f
         
         myReader   = ExtraFileReader(f)

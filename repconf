@@ -27,6 +27,8 @@ from replicator.RemoteLister import RemoteLister
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
 from replicator.logger import configureOutput
+from xml.parsers.expat import ExpatError
+
 
 import replicator.constants as constants
 
@@ -49,6 +51,12 @@ class Repconf:
         self.host  = config.get('DEFAULT','host')
         self.login = config.get('DEFAULT','login')
         
+        ###############################
+        # init loggers
+        self.logger = logging.getLogger('out')
+        
+        configureOutput(self.logger, join(constants.tmp_d, 'output.log') )
+        
     #######################################################
     def main(self):
         
@@ -68,19 +76,12 @@ class Repconf:
                             help="shows available programs")
         
         opts, args = myParser.parse_args()
-    
-       
-        ###############################
-        # init loggers
-        outLogger = logging.getLogger('out')
-        
-        configureOutput(outLogger, join(constants.tmp_d, 'output.log') )
-       
+           
         ###############################
         # If in local mode, just one arg is needed ignore any other args
         if opts.local:
-            etat_appli_f_name = args[0]
-            rsync_filelist_f = self.extractFilesFromAppliXML(etat_appli_f_name)
+            self.etat_appli_f_name = args[0]
+            rsync_filelist_f = self.extractFilesFromAppliXML(self.etat_appli_f_name)
             rsync = RSyncWrapper(self.login, self.host)
             rsync.SyncFilesFrom(rsync_filelist_f, constants.remote_root, constants.local_root)
             # TODO: exit status should reflect the success or failure of the command 
@@ -99,15 +100,15 @@ class Repconf:
                 print 'try \'./repconf.py <program> -?\' for available .appli files in each program'
                 
             if len(args) > 0:
-                p     = args[0]
-                p_dir = constants.programs.get(p)
+                program_p     = args[0]
+                p_dir = constants.programs.get(program_p)
                 
                 if p_dir == None:
-                    print "Do not know about program " + p
+                    print "Do not know about program " + program_p
                     print "Try -? for available programs"
                     sys.exit(-1)
                 
-                print 'listing available appli files in ' + p
+                print 'listing available appli files in ' + program_p
                 print
                 rl = RemoteLister(self.login, self.host)
                 rl.ls(p_dir, "appli$")
@@ -115,55 +116,84 @@ class Repconf:
             sys.exit(0)
         
         ###############################
-        # If in remote mode
-        if len(args) == 2:
-            p     = args[0]
-            etat_appli_f_name = args[1]
-            
-            p_dir = constants.programs.get(p)
-            
-            if p_dir == None:
-                print "Do not know about program " + p
-                print "Try -? for available programs"
-                sys.exit(-1)
-            
-            outLogger.info('getting remote file ' + etat_appli_f_name)
-            rsync = RSyncWrapper(self.login, self.host)
-        
-            f_r_src = join(p_dir, etat_appli_f_name);
-            f_l_dst = constants.local_root + '/' + join(p_dir, basename(etat_appli_f_name))
-        
-            outLogger.debug('full remote source is    :' + f_r_src)
-            outLogger.debug('full local destination is:' + f_l_dst)
-            
-            etat_appli_TMP = rsync.SyncSingleFile(f_r_src, f_l_dst)
-            
-            if exists(etat_appli_TMP):
-                
-                rsync_filelist_f, extras = self.extractFilesFromAppliXML(etat_appli_TMP, p_dir)
-                
-                rsync.SyncFilesFrom(rsync_filelist_f, constants.remote_root, constants.local_root)
-                
-                if len(extras) > 0 :
-                    outLogger.info("processing extra files")
-                    self.processExtras(extras)
-                    
-                
-            else:
-                self.outLogger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
-                sys.exit(-1)
-        else:
+        # Remote mode follows
+        if len(args) != 2:
             myParser.error("incorrect number of arguments. Try -h for help")
-            # will exit on error.        
+            # will exit on error.
+
+        ###############
+        # If we get here, we are in remote mode: get a fresh etat_appli...
+        program_p = args[0]
+        self.etat_appli_f_name = args[1]
+        
+        p_dir = constants.programs.get(program_p)
+        
+        if p_dir == None:
+            print "Do not know about program " + program_p
+            print "Try -? for available programs"
+            sys.exit(-1)
+        
+        self.logger.info('getting remote file ' + self.etat_appli_f_name)
+        rsync = RSyncWrapper(self.login, self.host)
+    
+        f_r_src = join(p_dir, self.etat_appli_f_name);
+        f_l_dst = constants.local_root + '/' + join(p_dir, basename(self.etat_appli_f_name))
+    
+        self.logger.debug('full remote source is    :' + f_r_src)
+        self.logger.debug('full local destination is:' + f_l_dst)
+        
+        etat_appli_TMP = rsync.SyncSingleFile(f_r_src, f_l_dst)
+
+        ###############
+        # ... if transfer failed there's no use in continuing.
+        if not exists(etat_appli_TMP):
+            self.self.logger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
+            sys.exit(-1)
+        ###############
+        # Otherwise extract the files from etat_appli and sync
+        rsync_filelist_f, extras = self.extractFilesFromAppliXML(etat_appli_TMP, p_dir)
+        rsync.SyncFilesFrom(rsync_filelist_f, constants.remote_root, constants.local_root)
+        
+        if len(extras) > 0 :
+            self.logger.info("--")
+            rsync_filelist_extras_f = self.extractFilesFromExtras(extras)
+            if rsync_filelist_extras_f != None:
+                rsync.SyncFilesFrom(rsync_filelist_extras_f, constants.remote_root, constants.local_root)
+        
+        self.logger.info('--')
+        self.logger.info('Done, bye')
 
     #######################################################
-    def processExtras(self, extras):
-        print "Will process these files:"
-         
-        for f in extras:
-            ExtraFileReader(f)
+    def extractFilesFromExtras(self, extras):
+        print "Processing Applications*.XML files to get scripts..."   
+        filesFromAllExtras = []
+                 
+        ######## read every extra file and add each of its files to the final list     
+        for f in extras:    
+            try:
+                myReader  = ExtraFileReader(f)
+                for f in myReader.getFiles():
+                    filesFromAllExtras.append(f)
+                         
+            except ExpatError, e:
+                self.logger.error(e)
+                self.logger.info("skipping...")
+                continue
+            except IOError, e:
+                self.logger.warning(basename(self.etat_appli_f_name) +\
+                                    '  contains  ' + basename(f) + ', but it could not be downloaded')
+                self.logger.info("skipping...")
 
-        
+
+        if len(filesFromAllExtras) > 0:
+            ######## generate another tmp file
+            myWriter = PlainWriter()
+            myWriter.addSources(filesFromAllExtras)
+            myWriter.writeTo(constants.rsync_tmp_extras)
+            return constants.rsync_tmp_extras
+        else:
+            return None
+
             
     #######################################################
     def extractFilesFromAppliXML(self, etat_appli_f, remote_root=None):
@@ -174,10 +204,7 @@ class Repconf:
             listed in etat_appli_f. The optional string remote_root
             is used to construct the full path of the remote files 
             - an array of EXTRA files to parse
-        '''
-        
-        outLogger = logging.getLogger('err')
-        outLogger = logging.getLogger('out')
+        '''        
         
         if remote_root:
             # apply dirname twice because we want the parent of the parent
@@ -190,11 +217,11 @@ class Repconf:
         
         #give user some output
         
-        outLogger.info('remote root: ' + root_dir)
-        outLogger.info('etat appli : application/' + basename(etat_appli_f))
+        self.logger.info('remote root: ' + root_dir)
+        self.logger.info('etat appli : application/' + basename(etat_appli_f))
         
         
-        #TODO: check for errors
+        
         try:
             myReader  = EAReader(etat_appli_f)
             mySources = myReader.getFiles(root_dir)
@@ -209,8 +236,9 @@ class Repconf:
             #most probably the passed file is not an etat appli
             sys.exit("The input file is not an appropriate etat.appli ")
         
-        outLogger.debug("Creating tmp file with " + str(len(mySources)) + " repSrc elements")
+        self.logger.debug("Creating tmp file with " + str(len(mySources)) + " repSrc elements")
         
+        #TODO: check for errors
         anotherWriter.writeTo(constants.rsync_tmp)
         
         #### Check if there are any Applications_*.xml files
@@ -254,6 +282,7 @@ class Repconf:
                 settings_f.write('\n')
                 
             settings_f.close()
+            sys.exit("Default configuration created in" + constants.settings_f)
     
 ###############################################################################
 if __name__ == '__main__':
