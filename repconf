@@ -22,6 +22,7 @@ from os.path import dirname, basename, splitext, join, exists
 from os import environ
 
 from replicator.EAReader import EAReader 
+from replicator.ExtraFileReader import ExtraFileReader
 from replicator.RemoteLister import RemoteLister
 from replicator.PlainWriter import PlainWriter
 from replicator.RSyncWrapper import RSyncWrapper
@@ -145,7 +146,7 @@ class Repconf:
                 
                 if len(extras) > 0 :
                     outLogger.info("processing extra files")
-                    #self.processExtras(extras)
+                    self.processExtras(extras)
                     
                 
             else:
@@ -157,9 +158,10 @@ class Repconf:
 
     #######################################################
     def processExtras(self, extras):
-        print "will process this files" 
+        print "Will process these files:"
+         
         for f in extras:
-            ExtraFileReader(f)      
+            ExtraFileReader(f)
 
         
             

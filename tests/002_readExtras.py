@@ -17,7 +17,7 @@ import unittest
 import os
 
 
-from replicator.EAReader import EAReader 
+from replicator.ExtraFileReader import ExtraFileReader
 
 
 class Test(unittest.TestCase):     
@@ -31,26 +31,27 @@ class Test(unittest.TestCase):
         pass
 
 
-    def testReadOK(self):
-        etat_appli_f = './etat_STD5_officiel.appli'
-        root_dir     = '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/Linux_2.4.7/A350/A350H'
+    def testReadV2(self):
+        f = './DALI_V2.xml'
+        print f
+        myReader   = ExtraFileReader(f)
         
-        myReader   = EAReader(etat_appli_f)
-        self.repSources = myReader.getFiles(root_dir)
+        self.repSources = myReader.getFiles()
         
         for src in self.repSources:
             print src
             
-    def testReadKO(self):
-        etat_appli_f = '../ref/conf_A350AC-1.xml'
-        root_dir     = '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/Linux_2.4.7/A350/A350H'
+    def testReadV1(self):
+        f = './DALI_V1.xml'
+        print f
         
-        try:
-            myReader   = EAReader(etat_appli_f)
-            self.repSources = myReader.getFiles(root_dir)
-        except AttributeError, ae:
-            print "input file for EAReader not in appropriate format"
+        myReader   = ExtraFileReader(f)
         
+        self.repSources = myReader.getFiles()
+        
+        for src in self.repSources:
+            print src
+            
 
             
 if __name__ == "__main__":
