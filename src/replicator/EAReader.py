@@ -7,9 +7,9 @@ Created on 4 juil. 2013
 
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
-from os.path import join
+from os.path import join, dirname, basename
 
-import sys, logging
+import sys, logging, re
 
 class EAReader(object):
     '''
@@ -61,21 +61,37 @@ class EAReader(object):
                 
                 # each file is represented by a RepSrc object
                 f = RepSrc()
-                
                 f.dirname = root_dir    
                 
                 # files are always in Rep_Livraison, even if Rep_Livrasion is empty
                 f.appendToDirname(tag_lst.item(i).getAttribute("Rep_Livraison"))
                 
+                ################## Models
                 # models are ALWAYS in sous-modeles directory
                 # and the basename is in the Librarie attribute
                 if (tag == 'Modele'):
                     f.appendToDirname("sous_modeles")
                     f.basename = tag_lst.item(i).getAttribute("Librairie")
+                    
+                    # special case for some models...
+                    # there is an extra file to download that can only be detected this way.
+                    if re.match('.*CKT_dssio_HQ.*', f.basename):
+                        # get son Etat.sousApp
+                        EtatTag = tag_lst.item(i).getElementsByTagName("Etat")[0]
+                        SousApp = EtatTag.getAttribute("Sous-application")
+                        if re.match('MaP.*', SousApp): 
+                            #get son Etat.Parametre.Init/Val
+                            InitTag = EtatTag.getElementsByTagName('Init')[0]
+                            extra_f = RepSrc()
+                            extra_f.dirname = root_dir
+                            extra_f.basename = InitTag.getAttribute("Val")
+                            lst_repsrc.append(extra_f)
+                ################## Others    
                 # for every other tag look for attribute Nom
                 else:
                     f.basename = tag_lst.item(i).getAttribute("Nom")
                 
+                ################## Finally, add every new repsrc to the list
                 lst_repsrc.append(f)
   
             #################################          

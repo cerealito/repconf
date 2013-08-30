@@ -637,7 +637,14 @@
       <!--********************************************************-->
       <!--**  Description de la liste des modeles               **-->
       <!--********************************************************-->
-
+	  <Modele Chemin_ATPRO="/home/simu/ATPRO/NEW_MODEL/entrees_sorties/cockpit_calculateurs/CKT_dssio/DEVELOPPEMENT/LONG_RANGE/A350/A350H" Rep_Livraison="" Librairie="libCKT_dssio_HQ_15.0_W3.so" Mnemo="dssio" Type="ap2633" Nom_ATPRO-CC="libCKT_dssio.so" Version_ATPRO-CC="V18.0" Vue_ATPRO-CC="" Type_Element="ATPRO-CC" livraison_pmi="NO">
+         <Etat Date="2013-07-31" Sous-application="MaP_EVO3P" Valeur="BA">
+            <Parametre Occ="1">
+               <Init Defaut="Oui" Val="profile_dssio_HQ_15.0_W3.prf"/>
+            </Parametre>
+         </Etat>
+      </Modele>
+	  
       <Modele Chemin_ATPRO="/home/simu/ATPRO/NEW_MODEL/system_models/ATA27_flight_control_system/ACT_actsim/EPOPEE/LONG_RANGE/WBI/COMMUN" Rep_Livraison="" Librairie="libACT_actsim_1.0.so" Mnemo="actsim" Type="atmo" Nom_ATPRO-CC="libACT_actsim.so" Version_ATPRO-CC="V1.0" Vue_ATPRO-CC="" Type_Element="ATPRO-CC" livraison_pmi="YES">
          <Etat Date="2011-06-09" Sous-application="SALR_EV" Valeur="BA">
          </Etat>

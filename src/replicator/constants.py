@@ -20,7 +20,7 @@ programs = {
             'MOSART_DT_PLFREF'    : '/home/SIMU_MOSART/APPLICATIONS/LINUX/DT/PLFREF/application/'
            }
 
-local_root  = '/home/saflores/workspace/repconf/fakeRoot/'
+local_root  = '/'
 remote_root = '/'
 
 # temp dir is hidden in the user's home
