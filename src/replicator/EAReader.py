@@ -75,17 +75,21 @@ class EAReader(object):
                     
                     # special case for some models...
                     # there is an extra file to download that can only be detected this way.
-                    if re.match('.*CKT_dssio_HQ.*', f.basename):
+                    if re.match('libCKT_dssio_.*', f.basename):
                         # get son Etat.sousApp
-                        EtatTag = tag_lst.item(i).getElementsByTagName("Etat")[0]
-                        SousApp = EtatTag.getAttribute("Sous-application")
-                        if re.match('MaP.*', SousApp): 
-                            #get son Etat.Parametre.Init/Val
-                            InitTag = EtatTag.getElementsByTagName('Init')[0]
-                            extra_f = RepSrc()
-                            extra_f.dirname = root_dir
-                            extra_f.basename = InitTag.getAttribute("Val")
-                            lst_repsrc.append(extra_f)
+                        try:
+                            EtatTag = tag_lst.item(i).getElementsByTagName("Etat")[0]
+                            SousApp = EtatTag.getAttribute("Sous-application")
+                            if 'MaP_EVO3P' == SousApp: 
+                                #get son Etat.Parametre.Init/Val
+                                InitTag = EtatTag.getElementsByTagName('Init')[0]
+                                extra_f = RepSrc()
+                                extra_f.dirname = root_dir
+                                extra_f.basename = InitTag.getAttribute("Val")
+                                extra_f.appendToDirname('datappli')
+                                lst_repsrc.append(extra_f)
+                        except Exception:
+                            self.outLogger.debug("tried to find a prf file for "+ f.basename + ' but couldnt...')
                 ################## Others    
                 # for every other tag look for attribute Nom
                 else:
