@@ -21,6 +21,10 @@ programs = {
            }
 
 local_root  = '/'
+# overwrite it with the env_var if needed:
+if environ.get('local_root'):
+    local_root = environ.get('local_root')
+
 remote_root = '/'
 
 # temp dir is hidden in the user's home
