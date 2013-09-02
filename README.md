@@ -1,4 +1,4 @@
-Repconf
+Replicate
 =======
 
 repconf.py is a small Python 2.4 script that wraps rsync (rsync.samba.org) in order to
