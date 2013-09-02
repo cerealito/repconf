@@ -40,6 +40,9 @@ import ConfigParser
 
 
 class Replicator:
+    '''
+    main class
+    '''
 
     #######################################################
     def __init__(self):
