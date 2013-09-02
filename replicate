@@ -39,7 +39,7 @@ import logging
 import ConfigParser
 
 
-class Repconf:
+class Replicator:
 
     #######################################################
     def __init__(self):
@@ -60,7 +60,7 @@ class Repconf:
     #######################################################
     def main(self):
         
-        usage = "usage: repconf [options] program file.appli"
+        usage = "usage: replicate [options] program file.appli"
         myParser = OptionParser(usage)
         
         myParser.add_option("-l",
@@ -97,7 +97,7 @@ class Repconf:
                 for k,v in constants.programs.items():
                     print k + ' : ' + v
                  
-                print 'try \'./repconf.py <program> -?\' for available .appli files in each program'
+                print 'try \'./replicate.py <program> -?\' for available .appli files in each program'
                 
             if len(args) > 0:
                 program_p     = args[0]
@@ -266,7 +266,7 @@ class Repconf:
             settings_f = open(constants.settings_f, 'w')
             
             contents = [
-                 '# Default settings file for repconf',
+                 '# Default settings file for replicate',
                  '# Fill with the proper values      ',
                  '                                   ',
                  '[DEFAULT]',
@@ -286,5 +286,5 @@ class Repconf:
     
 ###############################################################################
 if __name__ == '__main__':
-    myRepconf = Repconf()
+    myRepconf = Replicator()
     myRepconf.main()
