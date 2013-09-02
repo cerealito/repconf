@@ -285,7 +285,7 @@ class Replicator:
                 settings_f.write('\n')
                 
             settings_f.close()
-            sys.exit("Default configuration created in" + constants.settings_f)
+            sys.exit("Default configuration created.")
     
 ###############################################################################
 if __name__ == '__main__':
