@@ -17,7 +17,8 @@ programs = {
             'A350H' : '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/Linux_2.4.7/A350/A350H/application/',
             'S400D' : '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/LINUX/A400M/S400D/application/',
 			'MOSART_A380_PLFREF'  : '/home/SIMU_MOSART/APPLICATIONS/LINUX/A380M/PLFREF/application/',
-            'MOSART_DT_PLFREF'    : '/home/SIMU_MOSART/APPLICATIONS/LINUX/DT/PLFREF/application/'
+            'MOSART_DT_PLFREF'    : '/home/SIMU_MOSART/APPLICATIONS/LINUX/DT/PLFREF/application/',
+            'MOSART_SALR_PLFREF'  : '/home/SIMU_MOSART/APPLICATIONS/LINUX/SALR/PLFREF/application/'
            }
 
 local_root  = '/'
