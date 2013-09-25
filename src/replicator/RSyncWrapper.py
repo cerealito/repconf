@@ -111,7 +111,7 @@ class RSyncWrapper(object):
         self.io_q  = Queue()
                 
         cmd_lst = ['rsync',
-                   '-cvtl', # checksum, verbose, times, copy likns as links
+                   '-cvl', # checksum, verbose, copy likns as links
                    '--files-from=' + input_f_name,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
