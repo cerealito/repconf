@@ -76,8 +76,14 @@ class RSyncWrapper(object):
             #success, return something 
             # if sucessful,l_name exists
             if exists(tgt_local_name):
-                os.chmod(tgt_local_name, 0777)
+            
+                try:
+                    os.chmod(tgt_local_name, 0777)    
+                except OSError, e:
+                    self.outLogger.warning(tgt_local_name + ' belongs to someone else!')
+                
                 return tgt_local_name
+            
             else:
                 return None
         else:
@@ -105,7 +111,7 @@ class RSyncWrapper(object):
         self.io_q  = Queue()
                 
         cmd_lst = ['rsync',
-                   '-cvptgol', # checksum, verbose, permissions, times, group, owner, copy likns as links
+                   '-cvtl', # checksum, verbose, times, copy likns as links
                    '--files-from=' + input_f_name,
                     self.login + '@' + self.host + ':' + constants.remote_root,
                     constants.local_root]
