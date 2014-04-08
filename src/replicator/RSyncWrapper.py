@@ -125,7 +125,7 @@ class RSyncWrapper(object):
         
         stdout_watcher = Thread(target=s_watcher, name='s_watcher', args=('rsync', proc.stdout, self.io_q))
         stderr_watcher = Thread(target=s_watcher, name='e_watcher', args=('rsync_warning', proc.stderr, self.io_q))
-        stdout_printer = Thread(target=printer,   name='s_printer',   args=(proc,self.io_q))
+        stdout_printer = Thread(target=printer,   name='s_printer', args=(proc, self.io_q))
         
         stdout_watcher.start()
         stderr_watcher.start()
@@ -154,16 +154,16 @@ def printer(process, queue):
     while True:
         try:
             item = queue.get(True, 1)
-        except Empty:
-            if process.poll() is not None:
-                break
-        else:
             stream_name, line = item
             if line.endswith('\n'):
                 line = line[:-1]
-                
+
             if stream_name != 'rsync':
                 outLogger.warning(line)
             else:
                 outLogger.info(line)
+        except Empty:
+            if process.poll() is not None:
+                break
+
 
