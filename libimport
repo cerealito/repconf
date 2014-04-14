@@ -1,0 +1,162 @@
+#!/usr/bin/env python
+
+if __name__ == '__main__':
+    # explicitly append the ./src directory to the current path.
+    # most IDEs do this implicitly but it is better to have it explicit
+    # this makes the tool work the same in the IDE and in CLI
+    import sys
+    import inspect
+    from os.path import dirname, abspath, join
+    #when in CLI use inspect to locate the source directory
+    src_dir = join(dirname(abspath(inspect.getfile(inspect.currentframe()))),'src')
+    sys.path.append(src_dir)
+
+
+from optparse import OptionParser
+from os.path import dirname, basename, splitext, join, exists
+from os import environ
+
+
+from replicator.RemoteLister import RemoteLister
+
+from replicator.RSyncWrapper import RSyncWrapper, WeirdRsyncError, RsyncTimeoutError, RemoteFileMissingError
+from replicator.logger import configureOutput
+
+
+
+import replicator.constants as constants
+
+
+import os
+import re
+import logging
+import ConfigParser
+
+
+class LibImporter:
+    '''
+    main class
+    '''
+
+    ORIGIN = '/home/SIMU_DEVELOPPEMENT/APPLICATIONS/LINUX/A400M/S400D/import/'
+
+    #######################################################
+    def __init__(self):
+        self.initializeTmpDir()
+        
+        config = ConfigParser.ConfigParser()
+        config.read(constants.settings_f)
+        
+        self.host  = config.get('DEFAULT','host')
+        self.login = config.get('DEFAULT','login')
+        
+        ###############################
+        # init loggers
+        self.logger = logging.getLogger('out')
+        
+        configureOutput(self.logger, join(constants.tmp_d, 'libimport.log') )
+        
+    #######################################################
+    def main(self):
+        
+        usage = "usage: libimport [options] [files]"
+        myParser = OptionParser(usage)
+
+        myParser.add_option("-a",
+                            "--all",
+                            action="store_true",
+                            dest="show_all",
+                            help="shows all available libs")
+        
+        opts, args = myParser.parse_args()
+
+        
+        ###############################
+        # show available .so files in remote file system,
+        # then exits, regardless of any other options
+        if opts.show_all:
+            print 'listing available .so files in ' + self.ORIGIN
+            print
+            rl = RemoteLister(self.login, self.host)
+            rl.ls(self.ORIGIN, "so$", ['-t', '-r'])
+            
+            sys.exit(0)
+        
+        ###############################
+        # interactive mode follows
+        if len(args) == 0 :
+            self.logger.info('Should go to interactive')
+            self.logger.info('list latest 20 files then ask for a choice...')
+            self.logger.info('use curses???')
+
+        ###############
+        # If we get here, we are in non-interactive mode: get a lib from every file given
+        for lib in args:
+
+            self.logger.info('getting remote file ' + lib)
+            rsync = RSyncWrapper(self.login, self.host)
+
+            f_r_src = join(self.ORIGIN, lib);
+            f_l_dst = constants.local_root + '/' + join(self.ORIGIN, basename(lib))
+
+            self.logger.debug('full remote source is    :' + f_r_src)
+            self.logger.debug('full local destination is:' + f_l_dst)
+
+            try:
+                f_l_final = rsync.SyncSingleFile(f_r_src, f_l_dst)
+
+            except RemoteFileMissingError, e:
+                self.logger.error(e.message)
+                self.logger.debug('Skipping...')
+                continue
+
+            except RsyncTimeoutError, e:
+                self.logger.critical(e.message)
+                sys.exit(-1)
+
+            except WeirdRsyncError, e:
+                self.logger.critical(e.message)
+                self.logger.critical('check your permissions')
+
+
+        self.logger.info('--')
+        self.logger.info('Done, bye')
+
+    #######################################################
+    def initializeTmpDir(self):
+        '''
+        creates tmp dir and default settings for first time use
+        '''
+        
+        if not exists(constants.settings_f):
+            
+            if not exists(constants.tmp_d):
+                os.makedirs(constants.tmp_d, 0775)
+                    
+            print 'Initializing with default settings ' + constants.settings_f
+        
+            settings_f = open(constants.settings_f, 'w')
+            
+            contents = [
+                 '# Default settings file for replicate',
+                 '# Fill with the proper values      ',
+                 '                                   ',
+                 '[DEFAULT]',
+                 '# the login name to use in the _remote_ location',
+                 'login: ' + environ.get('USER'),
+                 '# the ip or hostname of the remote rsync server',
+                 'host : 195.220.10.144',
+                 '\n'
+                 ]
+            
+            for line in contents:
+                settings_f.write(line)
+                settings_f.write('\n')
+                
+            settings_f.close()
+            sys.exit("Default configuration created.")
+    
+###############################################################################
+if __name__ == '__main__':
+    myRepconf = LibImporter()
+    myRepconf.main()

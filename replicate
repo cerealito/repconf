@@ -144,14 +144,16 @@ class Replicator:
     
         self.logger.debug('full remote source is    :' + f_r_src)
         self.logger.debug('full local destination is:' + f_l_dst)
-        
-        etat_appli_TMP = rsync.SyncSingleFile(f_r_src, f_l_dst)
 
-        ###############
-        # ... if transfer failed there's no use in continuing.
-        if not exists(etat_appli_TMP):
-            self.self.logger.error("Input appli file could not be obtained from remote filesystem. Check your permissions\n")
+        try:
+            etat_appli_TMP = rsync.SyncSingleFile(f_r_src, f_l_dst)
+        except Exception, e:
+            # if transfer failed there's no use in continuing.
+            self.logger.critical(e.message)
+            self.logger.critical(self.etat_appli_f_name + ' could not be downloaded')
+            self.logger.critical('Cannot continue')
             sys.exit(-1)
+
         ###############
         # Otherwise extract the files from etat_appli and sync
         rsync_filelist_f, extras = self.extractFilesFromAppliXML(etat_appli_TMP, p_dir)

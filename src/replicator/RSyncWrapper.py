@@ -10,6 +10,29 @@ from Queue import Queue, Empty
 from threading import Thread
 
 
+class WeirdRsyncError(Exception):
+    def __init__(self, error_code, message=None):
+        self.error_code = error_code
+        self.message = 'Unknown error from rsync (' + error_code + ')'
+        if message:
+            self.message = message
+
+class RsyncTimeoutError(Exception):
+    error_code = 255
+
+    def __init__(self, message=None):
+        self.message = 'Rsync timed out. Did you pass the firewall?'
+        if message:
+            self.message = message
+
+class RemoteFileMissingError(Exception):
+    error_code = 23
+
+    def __init__(self, message=None):
+        self.message = 'The specified file does not exist in the remote filesystem'
+        if message:
+            self.message = message
+
 class RSyncWrapper(object):
     '''
     wraps Rsync like a burrito
@@ -71,12 +94,11 @@ class RSyncWrapper(object):
                 break
          
         self.outLogger.info("--")
-        
-        if proc.poll() == 0:
-            #success, return something 
-            # if sucessful,l_name exists
+        exit_code = proc.poll()
+        # rsync returned success, return something ourselves
+        if 0 == exit_code:
+            # if sucessful, l_name exists
             if exists(tgt_local_name):
-            
                 try:
                     os.chmod(tgt_local_name, 0777)    
                 except OSError, e:
@@ -85,25 +107,17 @@ class RSyncWrapper(object):
                 return tgt_local_name
             
             else:
-                return None
+                raise AssertionError('Rsync says the files are syncronized but file does not exist in local filesystem')
+        # rsync returned something else
         else:
-
-            if proc.poll() == 23:
-                # remote file does not exist
-                self.outLogger.critical('Could not read remote file:')
-                self.outLogger.critical(' ' + remote_f_name)
-                self.outLogger.critical('use repconf.py -w <program> for available .appli files in each program')
-                sys.exit(-1)
-                
-            if proc.poll() == 255:
-                # weird error on rsync, bail out
+            if exit_code == RemoteFileMissingError.error_code:
+                raise RemoteFileMissingError(remote_f_name + ' most probably does not exist in the remote filesystem')
+            elif exit_code == RsyncTimeoutError.error_code:
                 self.outLogger.critical('rsync timed out')
                 self.outLogger.critical('Are you sure you passed the Firewall?')
-                sys.exit(-1)
+                raise RsyncTimeoutError
             else:
-                self.outLogger.critical('unknown error with rsync')
-                self.outLogger.critical('check your permissions')
-                sys.exit(-1)
+                raise WeirdRsyncError(exit_code)
                 
         
     def SyncFilesFrom(self, input_f_name, r_root=constants.remote_root, l_root=constants.local_root):
