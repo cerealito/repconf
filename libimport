@@ -49,12 +49,16 @@ class LibImporter:
         
         self.host  = config.get('DEFAULT','host')
         self.login = config.get('DEFAULT','login')
-        
+
         ###############################
         # init loggers
         self.logger = logging.getLogger('out')
         
         configureOutput(self.logger, join(constants.tmp_d, 'libimport.log') )
+
+        ###############################
+        # our rsync object
+        self.rsync = RSyncWrapper(self.login, self.host)
         
     #######################################################
     def main(self):
@@ -75,7 +79,7 @@ class LibImporter:
         # show available .so files in remote file system,
         # then exits, regardless of any other options
         if opts.show_all:
-            print 'listing available .so files in ' + self.ORIGIN
+            self.logger.info('listing available .so files in ' + self.ORIGIN)
             print
             rl = RemoteLister(self.login, self.host)
             rl.ls(self.ORIGIN, "so$", ['-t', '-r'])
@@ -86,41 +90,54 @@ class LibImporter:
         # interactive mode follows
         if len(args) == 0 :
             self.logger.info('Should go to interactive')
-            self.logger.info('list latest 20 files then ask for a choice...')
-            self.logger.info('use curses???')
+            self.logger.info('listing latest .so files in ' + self.ORIGIN)
+            print
+            rl = RemoteLister(self.login, self.host)
+            available = rl.ls(self.ORIGIN, "so$", ['-t', '-r'], 20, with_numbers=True)
+            choice = None
 
-        ###############
-        # If we get here, we are in non-interactive mode: get a lib from every file given
-        for lib in args:
+            while choice is None:
+                choice = int(raw_input('Your choice: '))
+                if choice in available.keys():
+                    lib = available[choice]
+                    break
+                else:
+                    choice = None
+            self.sync_lib(lib)
 
-            self.logger.info('getting remote file ' + lib)
-            rsync = RSyncWrapper(self.login, self.host)
-
-            f_r_src = join(self.ORIGIN, lib);
-            f_l_dst = constants.local_root + '/' + join(self.ORIGIN, basename(lib))
-
-            self.logger.debug('full remote source is    :' + f_r_src)
-            self.logger.debug('full local destination is:' + f_l_dst)
-
-            try:
-                f_l_final = rsync.SyncSingleFile(f_r_src, f_l_dst)
-
-            except RemoteFileMissingError, e:
-                self.logger.error(e.message)
-                self.logger.debug('Skipping...')
-                continue
-
-            except RsyncTimeoutError, e:
-                self.logger.critical(e.message)
-                sys.exit(-1)
-
-            except WeirdRsyncError, e:
-                self.logger.critical(e.message)
-                self.logger.critical('check your permissions')
-
+        else:
+            ###############
+            # If we get here, we are in non-interactive mode: get a lib from every file given
+            for lib in args:
+                self.sync_lib(lib)
 
         self.logger.info('--')
         self.logger.info('Done, bye')
+    #######################################################
+    def sync_lib(self, lib):
+        self.logger.info('getting remote file ' + lib)
+
+        f_r_src = join(self.ORIGIN, lib)
+        f_l_dst = constants.local_root + '/' + join(self.ORIGIN, basename(lib))
+
+        self.logger.debug('full remote source is    :' + f_r_src)
+        self.logger.debug('full local destination is:' + f_l_dst)
+
+        try:
+            self.rsync.SyncSingleFile(f_r_src, f_l_dst)
+
+        except RemoteFileMissingError, e:
+            self.logger.error(e.message)
+            self.logger.debug('Skipping...')
+
+        except RsyncTimeoutError, e:
+            self.logger.critical(e.message)
+            sys.exit(-1)
+
+        except WeirdRsyncError, e:
+            self.logger.critical(e.message)
+            self.logger.critical('check your permissions')
+
 
     #######################################################
     def initializeTmpDir(self):

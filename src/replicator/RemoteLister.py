@@ -19,8 +19,7 @@ class RemoteLister(object):
         self.login = login
         self.host  = host
 
-        
-    def ls(self, f, passFilter, opts=[], limit=0):
+    def ls(self, f, passFilter, opts=[], limit=0, with_numbers=False):
         '''
             f is a file or directory to be passed as an argument to ls
             passFilter is a string to be passed to grep after ls
@@ -40,11 +39,24 @@ class RemoteLister(object):
                                  stderr=subprocess.PIPE)
         
         stdout, stderr = proc.communicate()
-        
+
+        result = {}
+
         if stdout:
-            print stdout
+            tmp_l = stdout.splitlines()
+
+            for i in range(len(tmp_l)):
+                result[i] = tmp_l[i]
+
+            if with_numbers:
+                for k,v in result.iteritems():
+                    print(str(k) +': ' + v)
+            else:
+                print stdout
+
         if proc.returncode != 0:
             if stderr:
                 print stderr
 
-                
+
+        return result
